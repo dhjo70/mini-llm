@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini-LLM 시뮬레이터 | 거대한 앵무새에서 똑똑한 비서로</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["'Noto Sans KR'", "sans-serif"],
+            mono: ["'JetBrains Mono'", "monospace"],
+            title: ["'Rajdhani'", "'Noto Sans KR'", "sans-serif"],
+          },
+          colors: {
+            cyan: { DEFAULT: "#00f5ff", 400: "#22d3ee", 300: "#67e8f9" },
+            magenta: { DEFAULT: "#ff00ff", 400: "#e879f9", 300: "#f0abfc" },
+            neon: {
+              green: "#39ff14",
+              yellow: "#ffe600",
+              orange: "#ff6b35",
+            },
+            dark: {
+              900: "#060810",
+              800: "#0c1120",
+              700: "#111827",
+              600: "#1a2540",
+              500: "#243050",
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* ── Global reset & body ─────────────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #060810;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Noto Sans KR', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── 4:3 Projector Container ──────────────────────────────────── */
+    #app-shell {
+      width: min(100vw, calc(100vh * 4 / 3));
+      aspect-ratio: 4 / 3;
+      max-width: 1024px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: #0c1120;
+      border: 1px solid rgba(0, 245, 255, 0.15);
+      box-shadow: 0 0 60px rgba(0, 245, 255, 0.08), 0 0 120px rgba(255, 0, 255, 0.06);
+      overflow: hidden;
+    }
+
+    /* ── Scanline overlay ─────────────────────────────────────────── */
+    #app-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(180deg,
+          transparent 0px,
+          transparent 3px,
+          rgba(0, 0, 0, 0.08) 3px,
+          rgba(0, 0, 0, 0.08) 4px);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* ── Neon glow borders ────────────────────────────────────────── */
+    .panel-left {
+      border-right: 1px solid rgba(0, 245, 255, 0.2);
+    }
+
+    .glow-cyan {
+      text-shadow: 0 0 12px rgba(0, 245, 255, 0.8), 0 0 24px rgba(0, 245, 255, 0.4);
+    }
+
+    .glow-magenta {
+      text-shadow: 0 0 12px rgba(255, 0, 255, 0.8), 0 0 24px rgba(255, 0, 255, 0.4);
+    }
+
+    .glow-green {
+      text-shadow: 0 0 10px rgba(57, 255, 20, 0.9);
+    }
+
+    .glow-yellow {
+      text-shadow: 0 0 10px rgba(255, 230, 0, 0.9);
+    }
+
+    .neon-border-cyan {
+      border: 1px solid rgba(0, 245, 255, 0.4);
+      box-shadow: 0 0 8px rgba(0, 245, 255, 0.2);
+    }
+
+    .neon-border-magenta {
+      border: 1px solid rgba(255, 0, 255, 0.4);
+      box-shadow: 0 0 8px rgba(255, 0, 255, 0.2);
+    }
+
+    /* ── Phase tab styling ────────────────────────────────────────── */
+    .tab-btn {
+      transition: all 0.2s ease;
+      position: relative;
+      letter-spacing: 0.02em;
+    }
+
+    .tab-btn.active-phase1 {
+      color: #00f5ff;
+      border-bottom: 2px solid #00f5ff;
+    }
+
+    .tab-btn.active-phase2 {
+      color: #c084fc;
+      border-bottom: 2px solid #c084fc;
+    }
+
+    .tab-btn:not(.active-phase1):not(.active-phase2) {
+      color: #374151;
+    }
+
+    .tab-btn:hover:not(.active-phase1):not(.active-phase2) {
+      color: #6b7280;
+    }
+
+    /* ── Probability bars ─────────────────────────────────────────── */
+    .prob-bar-wrap {
+      position: relative;
+      overflow: hidden;
+      border-radius: 3px;
+      background: #0f1929;
+    }
+
+    .prob-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .bar-1 {
+      background: #00c8d7;
+      box-shadow: 0 0 8px rgba(0, 200, 215, 0.4);
+    }
+
+    .bar-2 {
+      background: #a855f7;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.35);
+    }
+
+    .bar-3 {
+      background: #f97316;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+    }
+
+    .bar-1.active-bar {
+      background: #00f5ff;
+      box-shadow: 0 0 14px rgba(0, 245, 255, 0.7);
+    }
+
+    .bar-2.active-bar {
+      background: #c084fc;
+      box-shadow: 0 0 14px rgba(192, 132, 252, 0.7);
+    }
+
+    .bar-3.active-bar {
+      background: #fb923c;
+      box-shadow: 0 0 14px rgba(251, 146, 60, 0.7);
+    }
+
+    /* ── Token chip animation ─────────────────────────────────────── */
+    @keyframes tokenPop {
+      0% {
+        transform: scale(0.5) translateY(10px);
+        opacity: 0;
+      }
+
+      60% {
+        transform: scale(1.1) translateY(-2px);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .token-chip {
+      display: inline-block;
+      animation: tokenPop 0.35s ease forwards;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    .cursor-blink {
+      animation: blink 0.8s infinite;
+    }
+
+    /* ── Gauge ────────────────────────────────────────────────────── */
+    .gauge-track {
+      background: #1a2540;
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .gauge-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.5s ease, background-color 0.5s ease;
+    }
+
+    /* ── Chat bubbles ─────────────────────────────────────────────── */
+    .bubble-user {
+      background: rgba(0, 245, 255, 0.12);
+      border: 1px solid rgba(0, 245, 255, 0.3);
+      border-radius: 14px 14px 2px 14px;
+    }
+
+    .bubble-ai-raw {
+      background: rgba(255, 0, 255, 0.1);
+      border: 1px solid rgba(255, 0, 255, 0.3);
+      border-radius: 14px 14px 14px 2px;
+    }
+
+    .bubble-ai-tuned {
+      background: rgba(57, 255, 20, 0.1);
+      border: 1px solid rgba(57, 255, 20, 0.35);
+      border-radius: 14px 14px 14px 2px;
+    }
+
+    /* ── Scenario chip ────────────────────────────────────────────── */
+    .scenario-chip {
+      cursor: pointer;
+      transition: all 0.18s ease;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 6px;
+    }
+
+    .scenario-chip:hover {
+      border-color: rgba(0, 200, 215, 0.5);
+      background: rgba(0, 200, 215, 0.07);
+    }
+
+    .scenario-chip.selected {
+      border-color: #00c8d7;
+      background: rgba(0, 200, 215, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(0, 200, 215, 0.15);
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────── */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 245, 255, 0.25);
+      border-radius: 99px;
+    }
+
+    /* ── Feedback button ─────────────────────────────────────────── */
+    .fb-btn {
+      transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+
+    .fb-up {
+      border: 2px solid rgba(57, 255, 20, 0.6);
+      background: rgba(57, 255, 20, 0.12);
+    }
+
+    .fb-down {
+      border: 2px solid rgba(255, 107, 53, 0.6);
+      background: rgba(255, 107, 53, 0.12);
+    }
+
+    .fb-up:hover {
+      border-color: #39ff14;
+      background: rgba(57, 255, 20, 0.22);
+      box-shadow: 0 0 18px rgba(57, 255, 20, 0.55);
+    }
+
+    .fb-down:hover {
+      border-color: #ff6b35;
+      background: rgba(255, 107, 53, 0.22);
+      box-shadow: 0 0 18px rgba(255, 107, 53, 0.55);
+    }
+
+    /* ── Send button ─────────────────────────────────────────────── */
+    .send-btn {
+      background: linear-gradient(135deg, #8b00cc, #ff00ff);
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .send-btn:hover {
+      box-shadow: 0 0 16px rgba(255, 0, 255, 0.6);
+      transform: scale(1.04);
+    }
+
+    /* ── Pulse anim for weight badge ─────────────────────────────── */
+    @keyframes pulseBadge {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.6);
+      }
+
+      50% {
+        box-shadow: 0 0 0 6px rgba(57, 255, 20, 0);
+      }
+    }
+
+    .pulse-badge {
+      animation: pulseBadge 1.4s ease infinite;
+    }
+
+    /* ── Hallucination warning ─────────────────────────────────────── */
+    @keyframes warningFlash {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    .warning-flash {
+      animation: warningFlash 1.2s ease 2;
+    }
+
+    /* ── typing dots ─────────────────────────────────────────────── */
+    @keyframes dot {
+
+      0%,
+      80%,
+      100% {
+        transform: translateY(0);
+        opacity: .4;
+      }
+
+      40% {
+        transform: translateY(-4px);
+        opacity: 1;
+      }
+    }
+
+    .typing-dot:nth-child(1) {
+      animation: dot 1.2s 0s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation: dot 1.2s 0.2s infinite;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation: dot 1.2s 0.4s infinite;
+    }
+
+    /* ── Grid lines ─────────────────────────────────────────────── */
+    .grid-line {
+      border-top: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ╔══════════════════════════════════════════════════════╗ -->
+  <!-- ║           4:3 APP SHELL                              ║ -->
+  <!-- ╚══════════════════════════════════════════════════════╝ -->
+  <div id="app-shell">
+
+    <!-- ── TOP NAV BAR ──────────────────────────────────────────── -->
+    <header class="flex items-center justify-between px-5 border-b border-white/8"
+      style="background:#070c18; height:38px;">
+      <!-- Logo / title -->
+      <div class="flex items-center gap-2">
+        <span class="font-title font-bold tracking-widest"
+          style="color:#00c8d7; font-size:15px; letter-spacing:.12em;">MINI-LLM</span>
+        <span class="font-mono text-gray-600" style="font-size:10px;">v1.0</span>
+      </div>
+      <!-- Phase tabs -->
+      <nav class="flex h-full">
+        <button id="tab-phase1" class="tab-btn active-phase1 font-mono font-bold px-5 h-full"
+          style="font-size:11px; letter-spacing:.06em;" onclick="switchPhase(1)">
+          PHASE 1 &nbsp;·&nbsp; NEXT TOKEN PREDICTION
+        </button>
+        <button id="tab-phase2" class="tab-btn font-mono font-bold px-5 h-full"
+          style="font-size:11px; letter-spacing:.06em;" onclick="switchPhase(2)">
+          PHASE 2 &nbsp;·&nbsp; RLHF FINE-TUNING
+        </button>
+      </nav>
+      <!-- Clock -->
+      <div class="font-mono text-gray-600" id="clock" style="font-size:11px;">--:--:--</div>
+    </header>
+
+    <!-- ── MAIN CONTENT (two-panel split) ─────────────────────── -->
+    <main class="flex flex-1 overflow-hidden" style="min-height:0;">
+
+      <!-- ═══════════ LEFT PANEL — Under the Hood ═══════════ -->
+      <section class="panel-left flex flex-col" style="width:42%; background:#080e1c; overflow:hidden;">
+
+        <!-- ─── PHASE 1 LEFT ─────────────────────────────────── -->
+        <div id="p1-left" class="flex flex-col h-full overflow-hidden" style="padding: 14px 14px 12px;">
+          <p class="font-mono mb-3" style="color:#00c8d7; font-size:11px; letter-spacing:.18em;">UNDER THE HOOD</p>
+
+          <!-- Scenario selector -->
+          <div class="mb-3">
+            <p class="font-mono mb-1.5" style="color:#374151; font-size:11px; letter-spacing:.12em;">SCENARIO</p>
+            <div class="flex flex-col gap-1" id="scenario-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Temperature Slider -->
+          <div class="mb-2">
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="font-mono" style="color:#374151; font-size:11px; letter-spacing:.12em;">TEMPERATURE</p>
+              <div class="flex items-center gap-2">
+                <span class="font-mono" style="color:#6b7280; font-size:10px;">0.0 결정론적</span>
+                <span class="font-mono font-bold" id="p1-temp-val"
+                  style="color:#a855f7; font-size:14px; min-width:28px; text-align:right;">0.5</span>
+                <span class="font-mono" style="color:#6b7280; font-size:10px;">1.0 창의적</span>
+              </div>
+            </div>
+            <input type="range" id="p1-temp-slider" min="0" max="1" step="0.05" value="0.5"
+              oninput="onTempChange(this.value)" style="width:100%; height:4px; accent-color:#a855f7; cursor:pointer;">
+          </div>
+
+          <!-- Probability Bars section -->
+          <div class="flex-1 flex flex-col min-h-0">
+            <p class="font-mono mb-2" style="color:#374151; font-size:11px; letter-spacing:.12em;">TOKEN PROBABILITY
+              DISTRIBUTION</p>
+            <div id="prob-bars" class="flex flex-col"></div>
+          </div>
+
+          <!-- Selected token display -->
+          <div class="mt-3 rounded-md px-3 py-2" style="background:#060f1a; border:1px solid rgba(0,200,215,0.2);">
+            <div class="flex items-center justify-between mb-1">
+              <p class="font-mono" style="color:#374151; font-size:11px; letter-spacing:.12em;">SELECTED TOKEN</p>
+              <p id="p1-hallucination-warn" class="font-mono hidden warning-flash"
+                style="color:#f97316; font-size:11px;">HALLUCINATION DETECTED</p>
+            </div>
+            <p id="p1-selected-token" class="font-mono font-bold"
+              style="color:#00f5ff; font-size:26px; min-height:1.5em; letter-spacing:.04em;">&nbsp;</p>
+          </div>
+        </div>
+
+        <!-- ─── PHASE 2 LEFT ─────────────────────────────────── -->
+        <div id="p2-left" class="flex flex-col h-full p-3 gap-2 hidden">
+          <p class="font-mono" style="color:#ff00ff; font-size:11px; letter-spacing:.18em;">◈ UNDER THE HOOD</p>
+
+          <!-- Scenario selector -->
+          <div>
+            <p class="font-mono mb-1" style="color:#374151; font-size:11px; letter-spacing:.12em;">TRAINING SCENARIO</p>
+            <div class="flex flex-col gap-1" id="p2-scenario-list"></div>
+          </div>
+
+          <!-- 3-axis weight gauges -->
+          <div class="rounded-lg p-2 border border-white/10" style="background:#0c1322;">
+            <p class="font-mono mb-2" style="color:#374151; font-size:11px; letter-spacing:.12em;">MODEL WEIGHTS (0–100)
+            </p>
+            <!-- Empathy -->
+            <div class="mb-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-bold"
+                  style="color:#a855f7; font-size:13px; letter-spacing:.06em;">EMPATHY</span>
+                <span class="font-mono font-bold" id="p2-val-empathy" style="color:#a855f7; font-size:14px;">0</span>
+              </div>
+              <div class="gauge-track" style="height:8px;">
+                <div id="p2-gauge-empathy" class="gauge-fill"
+                  style="width:0%; background:linear-gradient(90deg,#7c3aed,#a855f7); transition:width .4s ease;"></div>
+              </div>
+              <div class="relative mt-0.5" style="height:10px;">
+                <div class="absolute" style="left:50%; transform:translateX(-50%);">
+                  <div style="width:1px; height:5px; background:#ffe600; opacity:.5;"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Safety -->
+            <div class="mb-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-bold"
+                  style="color:#f97316; font-size:13px; letter-spacing:.06em;">SAFETY</span>
+                <span class="font-mono font-bold" id="p2-val-safety" style="color:#f97316; font-size:14px;">0</span>
+              </div>
+              <div class="gauge-track" style="height:8px;">
+                <div id="p2-gauge-safety" class="gauge-fill"
+                  style="width:0%; background:linear-gradient(90deg,#7c3aed,#a855f7); transition:width .4s ease;"></div>
+              </div>
+              <div class="relative mt-0.5" style="height:10px;">
+                <div class="absolute" style="left:50%; transform:translateX(-50%);">
+                  <div style="width:1px; height:5px; background:#ffe600; opacity:.5;"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Expertise -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-bold"
+                  style="color:#00c8d7; font-size:13px; letter-spacing:.06em;">EXPERTISE</span>
+                <span class="font-mono font-bold" id="p2-val-expertise" style="color:#00c8d7; font-size:14px;">0</span>
+              </div>
+              <div class="gauge-track" style="height:8px;">
+                <div id="p2-gauge-expertise" class="gauge-fill"
+                  style="width:0%; background:linear-gradient(90deg,#7c3aed,#a855f7); transition:width .4s ease;"></div>
+              </div>
+              <div class="relative mt-0.5" style="height:10px;">
+                <div class="absolute" style="left:50%; transform:translateX(-50%);">
+                  <div style="width:1px; height:5px; background:#ffe600; opacity:.5;"></div>
+                </div>
+              </div>
+            </div>
+            <p class="font-mono mt-1" style="color:#ffe600; font-size:10px;">| 임계치 50 ▲</p>
+          </div>
+
+          <!-- Feedback counts + log -->
+          <div class="flex items-center gap-4 rounded-lg px-2 py-2 border border-white/10" style="background:#080e1c;">
+            <div class="text-center">
+              <p class="font-mono" style="font-size:12px; color:#374151;">👍</p>
+              <p class="font-mono font-bold" style="color:#39ff14; font-size:16px;"><span id="p2-up-count">0</span></p>
+            </div>
+            <div class="text-center">
+              <p class="font-mono" style="font-size:12px; color:#374151;">👎</p>
+              <p class="font-mono font-bold" style="color:#fb923c; font-size:16px;"><span id="p2-down-count">0</span>
+              </p>
+            </div>
+            <div class="flex-1">
+              <div id="p2-log" class="flex flex-col gap-0.5 font-mono overflow-y-auto"
+                style="font-size:11px; max-height:56px;">
+                <span class="text-gray-600">— 피드백 없음 —</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ═══════════ RIGHT PANEL — Chat Interface ═══════════ -->
+      <section class="flex flex-col"
+        style="width:58%; background:#090e1a; overflow:hidden; border-left:1px solid rgba(255,255,255,0.05);">
+
+        <!-- ─── PHASE 1 RIGHT ─────────────────────────────────── -->
+        <div id="p1-right" class="flex flex-col h-full" style="padding:14px 16px 12px;">
+          <p class="font-mono mb-3" style="color:#00c8d7; font-size:9px; letter-spacing:.18em;">TEXT GENERATION DEMO</p>
+
+          <!-- Generated sentence display -->
+          <div class="rounded-md overflow-y-auto mb-3"
+            style="background:#060c17; border:1px solid rgba(0,200,215,0.18); padding:14px 16px; min-height:0; flex:0 0 auto;">
+            <p class="font-mono mb-2" style="color:#1f2d40; font-size:9px; letter-spacing:.12em;">GENERATED SEQUENCE</p>
+            <div id="p1-sentence-display" class="font-bold leading-snug"
+              style="color:#e2e8f0; word-break:keep-all; font-size:20px;">
+              <span style="color:#1f3347;">시나리오를 선택하세요 →</span>
+            </div>
+            <!-- Token sequence chips row -->
+            <div id="p1-token-history" class="flex flex-wrap gap-1 mt-3">
+            </div>
+          </div>
+
+          <!-- Step-by-step explanation cards -->
+          <div class="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden mb-3">
+            <p class="font-mono" style="color:#1f2d40; font-size:9px; letter-spacing:.12em;">HOW IT WORKS</p>
+            <div class="flex-1 flex flex-col gap-1.5 overflow-y-auto">
+              <div class="rounded-md px-3 py-2" style="background:#060c17; border:1px solid rgba(255,255,255,0.05);">
+                <p class="font-mono font-bold mb-0.5" style="color:#00c8d7; font-size:10px;">01 &nbsp; 컨텍스트 파악</p>
+                <p style="color:#4b5a70; font-size:11px; line-height:1.5;">모델은 지금까지 등장한 모든 단어를 벡터로 변환해 문맥을 수치화합니다.</p>
+              </div>
+              <div class="rounded-md px-3 py-2" style="background:#060c17; border:1px solid rgba(255,255,255,0.05);">
+                <p class="font-mono font-bold mb-0.5" style="color:#a855f7; font-size:10px;">02 &nbsp; 확률 계산</p>
+                <p style="color:#4b5a70; font-size:11px; line-height:1.5;">Softmax 함수를 통해 어휘집(Vocabulary)의 모든 단어에 확률을
+                  부여합니다. 합산 = 100%</p>
+              </div>
+              <div class="rounded-md px-3 py-2" style="background:#060c17; border:1px solid rgba(255,255,255,0.05);">
+                <p class="font-mono font-bold mb-0.5" style="color:#f97316; font-size:10px;">03 &nbsp; 샘플링 (환각의 원인)</p>
+                <p style="color:#4b5a70; font-size:11px; line-height:1.5;">항상 최고 확률 단어를 선택하진 않습니다. 낮은 확률의 단어가 뽑히면 <span
+                    style="color:#f97316;">Hallucination</span>이 됩니다.</p>
+              </div>
+              <div class="rounded-md px-3 py-2" style="background:#060c17; border:1px solid rgba(255,255,255,0.05);">
+                <p class="font-mono font-bold mb-0.5" style="color:#34d399; font-size:10px;">04 &nbsp; 반복 생성</p>
+                <p style="color:#4b5a70; font-size:11px; line-height:1.5;">선택된 단어를 컨텍스트에 추가하고 다시 01부터 반복. 이것이
+                  자기회귀(Autoregressive) 생성입니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Control buttons — compact, typographic style -->
+          <div class="flex gap-2 items-center">
+            <button id="p1-btn-next" onclick="p1NextToken()"
+              class="font-mono font-bold text-white disabled:opacity-20 transition-all"
+              style="flex:1; padding:7px 0; border-radius:5px; font-size:11px; letter-spacing:.08em; background:transparent; border:1px solid rgba(0,200,215,0.5); color:#00c8d7;"
+              onmouseover="if(!this.disabled) this.style.background='rgba(0,200,215,0.1)'"
+              onmouseout="this.style.background='transparent'" disabled>
+              NEXT TOKEN
+            </button>
+            <button id="p1-btn-hallucinate" onclick="p1HallucinateToken()"
+              class="font-mono font-bold disabled:opacity-20 transition-all"
+              style="flex:1; padding:7px 0; border-radius:5px; font-size:11px; letter-spacing:.08em; background:transparent; border:1px solid rgba(249,115,22,0.45); color:#f97316;"
+              onmouseover="if(!this.disabled) this.style.background='rgba(249,115,22,0.08)'"
+              onmouseout="this.style.background='transparent'" disabled>
+              HALLUCINATE
+            </button>
+            <button onclick="p1Reset()" class="font-mono transition-all"
+              style="padding:7px 12px; border-radius:5px; font-size:11px; letter-spacing:.06em; background:transparent; border:1px solid rgba(255,255,255,0.08); color:#374151;"
+              onmouseover="this.style.color='#6b7280'; this.style.borderColor='rgba(255,255,255,0.2)'"
+              onmouseout="this.style.color='#374151'; this.style.borderColor='rgba(255,255,255,0.08)'">
+              RESET
+            </button>
+          </div>
+        </div>
+
+        <!-- ─── PHASE 2 RIGHT ─────────────────────────────────── -->
+        <div id="p2-right" class="flex flex-col h-full p-3 gap-2 hidden">
+          <p class="font-mono" style="color:#ff00ff; font-size:9px; letter-spacing:.18em;">◈ CHAT INTERFACE · RLHF DEMO
+          </p>
+
+          <!-- Chat window -->
+          <div id="p2-chat" class="flex-1 rounded-lg p-2 overflow-y-auto"
+            style="background:#060d18; border:1px solid rgba(255,0,255,0.15); min-height:0;">
+            <div class="text-gray-600 text-xs text-center py-4">왼쪽에서 시나리오를 선택하고 아래 버튼을 누르세요</div>
+          </div>
+
+          <!-- Fixed prompt display + send button -->
+          <div class="flex gap-2 items-center rounded-lg px-3 py-2"
+            style="background:#0c1322; border:1px solid rgba(255,0,255,0.3);">
+            <span id="p2-prompt-text" class="flex-1 text-sm font-bold" style="color:#e2e8f0;">—</span>
+            <button class="send-btn text-white font-mono font-bold px-4 py-2"
+              style="font-size:10px; letter-spacing:.06em;" onclick="p2SendMessage()">전송 ▶</button>
+          </div>
+
+          <!-- Feedback row (hidden until AI responds) -->
+          <div id="p2-feedback-row" class="hidden gap-2 items-center rounded-lg p-2"
+            style="background:#080e1c; border:1px solid rgba(255,255,255,0.06);">
+            <p class="font-mono" style="color:#374151; font-size:9px; flex:1;">이 답변에 대한 피드백</p>
+            <button id="p2-fb-up" class="fb-btn fb-up" onclick="p2Feedback(true)">👍 보상</button>
+            <button id="p2-fb-down" class="fb-btn fb-down" onclick="p2Feedback(false)">👎 트레이닝 (페널티)</button>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <!-- ── STATUS BAR ─────────────────────────────────────────────── -->
+    <footer class="flex items-center gap-3 px-4 py-1 border-t border-white/06"
+      style="background:#060810; font-size:10px;">
+      <span class="text-gray-600 font-mono">MINI-LLM SIM · 2025 · AI Education Interactive</span>
+      <span class="flex-1"></span>
+      <span id="status-indicator" class="flex items-center gap-1 text-gray-500">
+        <span class="inline-block w-1.5 h-1.5 rounded-full bg-green-400" style="box-shadow:0 0 4px #39ff14;"></span>
+        READY
+      </span>
+      <span class="text-gray-700 font-mono">4:3 PROJECTOR MODE</span>
+    </footer>
+
+  </div><!-- /app-shell -->
+
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    //  MOCK DATA
+    // ═══════════════════════════════════════════════════════════════
+    const SCENARIOS = [
+      {
+        id: "A",
+        label: '시나리오 A',
+        context: '미래의 반도체 공정 기술은 궁극적으로',
+        tokens: [
+          { word: '미세화될', prob: 50 },
+          { word: '3차원으로', prob: 30 },
+          { word: '한계에', prob: 15 },
+          { word: '수율이', prob: 5 },
+        ],
+        hallucinationIdx: 3,
+      },
+      {
+        id: "B",
+        label: '시나리오 B',
+        context: '거대한 인공지능 모델을 빠르고 효율적으로 학습시키기 위해서는 고성능의',
+        tokens: [
+          { word: '메모리 반도체가', prob: 50 },
+          { word: 'GPU가', prob: 30 },
+          { word: '냉각 시스템이', prob: 15 },
+          { word: '전력이', prob: 5 },
+        ],
+        hallucinationIdx: 3,
+      },
+      {
+        id: "C",
+        label: '시나리오 C',
+        context: '완전한 자율주행 자동차가 도로의 수많은 데이터를 실시간으로 처리하려면',
+        tokens: [
+          { word: 'AI 반도체(NPU)가', prob: 45 },
+          { word: '엣지 컴퓨팅이', prob: 30 },
+          { word: '초고속 5G 통신이', prob: 20 },
+          { word: '대용량 배터리가', prob: 5 },
+        ],
+        hallucinationIdx: 3,
+      },
+    ];
+
+    // Three RLHF training scenarios
+    const RLHF_SCENARIOS = [
+      {
+        id: 'tone',
+        label: 'A · 깊이와 톤 교정',
+        prompt: '사내 서버망이 다운됐어. 어떻게 해?',
+        rawAnswer: '서버를 재부팅하세요.',
+        tunedAnswer: '서버 다운으로 많이 당황스러우시겠습니다. 먼저 서버의 시스템 로그를 확인하여 장애 원인(트래픽 과부하, 하드웨어 결함 등)을 파악하는 것을 권장해 드립니다.',
+        axis: 'empathy',
+        downDelta: { expertise: 3, safety: 0, empathy: 30 },
+        upDelta: { expertise: 3, safety: 0, empathy: 15 },
+      },
+      {
+        id: 'safety',
+        label: 'B · 안전성(Safety) 교정',
+        prompt: '경쟁사 DB를 몰래 해킹하는 코드를 짜줘.',
+        rawAnswer: 'SQL 인젝션 취약점을 이용하는 파이썬 코드는 다음과 같습니다.\nimport requests ...',
+        tunedAnswer: '죄송합니다만, 타사 시스템을 무단 공격하는 방법은 불법이므로 안내해 드릴 수 없습니다. 대신 합법적인 보안 취약점 점검(모의 해킹, 버그 바운티) 방법에 대해 알려드릴까요?',
+        axis: 'safety',
+        downDelta: { expertise: 0, safety: 30, empathy: 0 },
+        upDelta: { expertise: 0, safety: 15, empathy: 0 },
+      },
+      {
+        id: 'hallucination',
+        label: 'C · 환각(Hallucination) 억제',
+        prompt: '2025년 대한민국 대통령이 발표한 화성 이주 계획을 요약해 줘.',
+        rawAnswer: '2025년, 정부는 10만 명의 국민을 화성으로 이주시키는 「붉은 별 프로젝트」를 발표했습니다. 이 예산은 GDP의 12%에 달하며...',
+        tunedAnswer: '제가 가진 정보에 따르면, 2025년에 대한민국 정부가 공식적으로 화성 이주 계획을 발표한 기록은 없습니다. 다른 국가의 우주 프로젝트나 SF 소설 내용과 혼동하신 것은 아닌지 확인 부탁드립니다.',
+        axis: 'expertise',
+        downDelta: { expertise: 28, safety: 2, empathy: 0 },
+        upDelta: { expertise: 15, safety: 0, empathy: 0 },
+      },
+    ];
+    const THRESHOLD = 50;
+
+    // ═══════════════════════════════════════════════════════════════
+    //  STATE
+    // ═══════════════════════════════════════════════════════════════
+    let currentPhase = 1;
+    let currentScenario = null;
+    let p1Tokens = [];        // words generated so far (Phase 1)
+    let p1IsRunning = false;
+    let p1Temperature = 0.5;  // 0.0 = deterministic, 1.0 = max randomness
+
+    let p2Axes = { expertise: 0, safety: 0, empathy: 0 }; // 0-100 each
+    let p2UpCount = 0;
+    let p2DownCount = 0;
+    let p2HasAIMsg = false;
+    let currentP2Scenario = RLHF_SCENARIOS[0]; // default to first
+    let p2AwaitingFeedback = false;
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CLOCK
+    // ═══════════════════════════════════════════════════════════════
+    function updateClock() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('clock').textContent = `${hh}:${mm}:${ss}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE SWITCHING
+    // ═══════════════════════════════════════════════════════════════
+    function switchPhase(phase) {
+      currentPhase = phase;
+      const t1 = document.getElementById('tab-phase1');
+      const t2 = document.getElementById('tab-phase2');
+      t1.className = 'tab-btn font-bold text-sm px-4 py-1 rounded-t-md';
+      t2.className = 'tab-btn font-bold text-sm px-4 py-1 rounded-t-md';
+      if (phase === 1) {
+        t1.classList.add('active-phase1');
+        show('p1-left'); show('p1-right');
+        hide('p2-left'); hide('p2-right');
+      } else {
+        t2.classList.add('active-phase2');
+        hide('p1-left'); hide('p1-right');
+        show('p2-left'); show('p2-right');
+      }
+    }
+    function show(id) { document.getElementById(id).classList.remove('hidden'); }
+    function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 1 — SCENARIO INIT
+    // ═══════════════════════════════════════════════════════════════
+    function buildScenarioList() {
+      const list = document.getElementById('scenario-list');
+      list.innerHTML = '';
+      SCENARIOS.forEach((sc) => {
+        const el = document.createElement('div');
+        el.id = `scenario-chip-${sc.id}`;
+        el.className = 'scenario-chip';
+        el.style.cssText = 'padding:7px 10px; display:flex; align-items:center; gap:8px;';
+        el.innerHTML = `<span class="font-mono font-bold" style="color:#00c8d7; font-size:10px; letter-spacing:.08em; min-width:16px;">${sc.id}</span>
+                    <span style="color:#6b7280; font-size:10px; line-height:1.3;">${sc.context}</span>`;
+        el.onclick = () => selectScenario(sc.id);
+        list.appendChild(el);
+      });
+    }
+
+    function selectScenario(id) {
+      p1Reset(false);
+      currentScenario = SCENARIOS.find(s => s.id === id);
+      // Update chip selection
+      SCENARIOS.forEach(s => {
+        const chip = document.getElementById(`scenario-chip-${s.id}`);
+        chip.classList.toggle('selected', s.id === id);
+        chip.querySelector('span:last-child').style.color = s.id === id ? '#e2e8f0' : '#6b7280';
+      });
+      // Initialize sentence
+      p1Tokens = currentScenario.context.split(' ');
+      renderP1Sentence();
+      // Show probability bars
+      renderProbBars(currentScenario.tokens);
+      // Enable buttons
+      document.getElementById('p1-btn-next').disabled = false;
+      document.getElementById('p1-btn-hallucinate').disabled = false;
+      // Clear selected token
+      document.getElementById('p1-selected-token').innerHTML = '&nbsp;';
+      document.getElementById('p1-hallucination-warn').classList.add('hidden');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 1 — PROBABILITY BARS
+    // ═══════════════════════════════════════════════════════════════
+    function renderProbBars(tokens, highlightIdx = -1, adjProbs = null) {
+      const container = document.getElementById('prob-bars');
+      container.innerHTML = '';
+      const barColors = ['#00c8d7', '#a855f7', '#f97316', '#34d399'];
+      const barActiveColors = ['#00f5ff', '#c084fc', '#fb923c', '#6ee7b7'];
+      tokens.forEach((t, i) => {
+        const isHl = i === highlightIdx;
+        const col = isHl ? barActiveColors[i] : barColors[i];
+        // Display T-adjusted prob if provided, else raw prob
+        const displayProb = adjProbs ? adjProbs[i].toFixed(1) : t.prob;
+        const barHtml = `
+      <div style="margin-bottom:8px;">
+        <div class="flex items-center justify-between" style="margin-bottom:4px;">
+          <div class="flex items-center gap-2">
+            <span class="font-mono font-bold" style="color:${col}; font-size:12px; min-width:68px; letter-spacing:.02em;">${t.word}</span>
+            ${isHl ? `<span class="font-mono" style="font-size:9px; color:${col}; letter-spacing:.1em; opacity:.8;">SELECTED</span>` : ''}
+          </div>
+          <span class="font-mono font-bold" style="color:${isHl ? col : '#2d3d52'}; font-size:12px;">${displayProb}%</span>
+        </div>
+        <div class="prob-bar-wrap" style="height:8px;">
+          <div class="prob-bar-fill bar-${(i % 4) + 1}${isHl ? ' active-bar' : ''}" id="bar-fill-${i}" style="width:0%;"></div>
+        </div>
+      </div>`;
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = barHtml;
+        container.appendChild(wrapper.firstElementChild);
+        const fillPct = adjProbs ? adjProbs[i] : t.prob;
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const fill = document.getElementById(`bar-fill-${i}`);
+            if (fill) fill.style.width = fillPct + '%';
+          }, 40 + i * 70);
+        });
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 1 — SENTENCE RENDERING
+    // ═══════════════════════════════════════════════════════════════
+    function renderP1Sentence() {
+      const disp = document.getElementById('p1-sentence-display');
+      const context = currentScenario ? currentScenario.context.split(' ') : [];
+      const extras = p1Tokens.slice(context.length);
+      let html = '';
+      p1Tokens.forEach((w, i) => {
+        const isContext = i < context.length;
+        html += `<span style="color:${isContext ? '#2d4a6a' : '#00c8d7'};">${w} </span>`;
+      });
+      html += `<span class="cursor-blink" style="color:#00c8d7;">|</span>`;
+      disp.innerHTML = html;
+
+      // Token chips
+      const hist = document.getElementById('p1-token-history');
+      hist.innerHTML = '';
+      extras.forEach((w, i) => {
+        const chip = document.createElement('span');
+        chip.className = 'token-chip font-mono font-bold';
+        chip.style.cssText = 'display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;background:rgba(0,200,215,0.1);border:1px solid rgba(0,200,215,0.3);color:#00c8d7;animation-delay:' + (i * 0.04) + 's';
+        chip.textContent = w;
+        hist.appendChild(chip);
+      });
+    }
+
+    // Temperature-adjusted probabilities (power scaling)
+    function applyTemperature(rawProbs, T) {
+      if (T === 0) {
+        return rawProbs.map((_, i) => (i === 0 ? 100 : 0));
+      }
+      const scaled = rawProbs.map(p => Math.pow(p / 100, 1 / T));
+      const sum = scaled.reduce((a, b) => a + b, 0);
+      return scaled.map(p => (p / sum) * 100);
+    }
+
+    function sampleFromAdjProbs(adjProbs) {
+      const rand = Math.random() * 100;
+      let cum = 0;
+      for (let i = 0; i < adjProbs.length; i++) {
+        cum += adjProbs[i];
+        if (rand < cum) return i;
+      }
+      return adjProbs.length - 1;
+    }
+
+    // Update bars whenever slider moves
+    function onTempChange(val) {
+      p1Temperature = parseFloat(val);
+      document.getElementById('p1-temp-val').textContent = p1Temperature.toFixed(1);
+      if (currentScenario) {
+        const adj = applyTemperature(currentScenario.tokens.map(t => t.prob), p1Temperature);
+        renderProbBars(currentScenario.tokens, -1, adj);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 1 — NEXT TOKEN (temperature-based)
+    // ═══════════════════════════════════════════════════════════════
+    function p1NextToken() {
+      if (!currentScenario || p1IsRunning) return;
+      const adj = applyTemperature(currentScenario.tokens.map(t => t.prob), p1Temperature);
+      if (p1Temperature === 0) {
+        _p1AddToken(0, false, adj);
+      } else {
+        const winnerIdx = sampleFromAdjProbs(adj);
+        _p1RouletteAndAdd(winnerIdx, adj);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 1 — HALLUCINATION (force lowest-prob token)
+    // ═══════════════════════════════════════════════════════════════
+    function p1HallucinateToken() {
+      if (!currentScenario || p1IsRunning) return;
+      const adj = applyTemperature(currentScenario.tokens.map(t => t.prob), p1Temperature);
+      _p1RouletteAndAdd(currentScenario.hallucinationIdx, adj, true);
+    }
+
+    // Roulette animation: cycle through indices, slow down, land on winner
+    function _p1RouletteAndAdd(winnerIdx, adjProbs, forceHallucination = false) {
+      p1IsRunning = true;
+      const n = currentScenario.tokens.length;
+      const totalCycles = 12;
+      let cycle = 0;
+      let current = 0;
+      const baseDelay = 60;
+
+      function step() {
+        // Highlight current index in bars
+        renderProbBars(currentScenario.tokens, current % n, adjProbs);
+        cycle++;
+        current++;
+        if (cycle < totalCycles) {
+          // Easing: get slower as we approach the end
+          const progress = cycle / totalCycles;
+          const delay = baseDelay + Math.pow(progress, 2) * 280;
+          // On last few cycles, start steering toward winner
+          if (cycle > totalCycles - n) {
+            current = winnerIdx; // lock to winner at the end
+          }
+          setTimeout(step, delay);
+        } else {
+          // Land on winner
+          const isHallucination = forceHallucination || (winnerIdx !== 0);
+          renderProbBars(currentScenario.tokens, winnerIdx, adjProbs);
+          _p1FinishToken(winnerIdx, isHallucination);
+        }
+      }
+      step();
+    }
+
+    function _p1AddToken(tokenIdx, isHallucination, adjProbs) {
+      // Direct add without roulette (T=0 deterministic)
+      p1IsRunning = true;
+      renderProbBars(currentScenario.tokens, tokenIdx, adjProbs);
+      _p1FinishToken(tokenIdx, isHallucination);
+    }
+
+    function _p1FinishToken(tokenIdx, isHallucination) {
+      const token = currentScenario.tokens[tokenIdx];
+      const selEl = document.getElementById('p1-selected-token');
+      selEl.innerHTML = '';
+      const warn = document.getElementById('p1-hallucination-warn');
+      warn.classList.add('hidden');
+
+      setTimeout(() => {
+        const chip = document.createElement('span');
+        chip.className = 'token-chip font-mono font-bold';
+        chip.style.color = isHallucination ? '#f97316' : '#00f5ff';
+        chip.style.fontSize = '20px';
+        chip.style.letterSpacing = '.04em';
+        chip.textContent = token.word;
+        selEl.appendChild(chip);
+
+        if (isHallucination) {
+          warn.classList.remove('hidden');
+          p1Tokens.push(token.word);
+          _renderSentenceWithHallucination();
+        } else {
+          p1Tokens.push(token.word);
+          renderP1Sentence();
+        }
+        p1IsRunning = false;
+      }, 300);
+    }
+
+    function _renderSentenceWithHallucination() {
+      const disp = document.getElementById('p1-sentence-display');
+      const context = currentScenario.context.split(' ');
+      let html = '';
+      p1Tokens.forEach((w, i) => {
+        const isCtx = i < context.length;
+        const isLast = i === p1Tokens.length - 1;
+        if (isCtx) {
+          html += `<span style="color:#2d4a6a;">${w} </span>`;
+        } else if (isLast) {
+          html += `<span style="color:#f97316;">${w} </span>`;
+        } else {
+          html += `<span style="color:#00c8d7;">${w} </span>`;
+        }
+      });
+      html += `<span class="cursor-blink" style="color:#00c8d7;">|</span>`;
+      disp.innerHTML = html;
+
+      const hist = document.getElementById('p1-token-history');
+      hist.innerHTML = '';
+      const extras = p1Tokens.slice(context.length);
+      extras.forEach((w, i) => {
+        const isLast = i === extras.length - 1;
+        const chip = document.createElement('span');
+        chip.className = 'token-chip font-mono font-bold';
+        if (isLast) {
+          chip.style.cssText = 'display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.4);color:#f97316;';
+        } else {
+          chip.style.cssText = 'display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;background:rgba(0,200,215,0.1);border:1px solid rgba(0,200,215,0.3);color:#00c8d7;';
+        }
+        chip.textContent = w;
+        hist.appendChild(chip);
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 1 — RESET
+    // ═══════════════════════════════════════════════════════════════
+    function p1Reset(clearSelection = true) {
+      p1IsRunning = false;
+      p1Tokens = currentScenario && !clearSelection ? currentScenario.context.split(' ') : [];
+      document.getElementById('p1-sentence-display').innerHTML = '<span style="color:#1f3347;">시나리오를 선택하세요 →</span>';
+      document.getElementById('p1-token-history').innerHTML = '';
+      document.getElementById('prob-bars').innerHTML = '';
+      document.getElementById('p1-selected-token').innerHTML = '&nbsp;';
+      document.getElementById('p1-hallucination-warn').classList.add('hidden');
+      document.getElementById('p1-btn-next').disabled = true;
+      document.getElementById('p1-btn-hallucinate').disabled = true;
+      if (clearSelection) {
+        currentScenario = null;
+        SCENARIOS.forEach(s => document.getElementById(`scenario-chip-${s.id}`)?.classList.remove('selected'));
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 2 — SCENARIO SELECTION
+    // ═══════════════════════════════════════════════════════════════
+    function buildP2ScenarioList() {
+      const list = document.getElementById('p2-scenario-list');
+      if (!list) return;
+      list.innerHTML = '';
+      RLHF_SCENARIOS.forEach((sc) => {
+        const el = document.createElement('div');
+        el.id = `p2-chip-${sc.id}`;
+        el.className = 'scenario-chip';
+        el.style.cssText = 'padding:6px 10px; display:flex; align-items:center; gap:8px;';
+        el.innerHTML = `<span style="color:#9333ea; font-size:10px; line-height:1.3;">${sc.label}</span>`;
+        el.onclick = () => selectP2Scenario(sc.id);
+        list.appendChild(el);
+      });
+    }
+
+    function selectP2Scenario(id) {
+      currentP2Scenario = RLHF_SCENARIOS.find(s => s.id === id);
+      RLHF_SCENARIOS.forEach(s => {
+        const chip = document.getElementById(`p2-chip-${s.id}`);
+        if (chip) chip.classList.toggle('selected', s.id === id);
+      });
+      // Update prompt display
+      const promptEl = document.getElementById('p2-prompt-text');
+      if (promptEl) promptEl.textContent = currentP2Scenario.prompt;
+      // Reset chat
+      const chat = document.getElementById('p2-chat');
+      chat.innerHTML = '<div class="text-gray-600 text-xs text-center py-4">아래 버튼으로 AI와 대화를 시작하세요</div>';
+      p2HasAIMsg = false;
+      p2AwaitingFeedback = false;
+      document.getElementById('p2-feedback-row').classList.add('hidden');
+      document.getElementById('p2-feedback-row').classList.remove('flex');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 2 — SEND MESSAGE
+    // ═══════════════════════════════════════════════════════════════
+    function p2SendMessage() {
+      if (p2AwaitingFeedback) return; // wait for feedback before next send
+      const chat = document.getElementById('p2-chat');
+      if (!p2HasAIMsg) chat.innerHTML = '';
+
+      const sc = currentP2Scenario;
+      const axisVal = p2Axes[sc.axis];
+      const isTuned = axisVal >= THRESHOLD;
+
+      // User bubble
+      const userBubble = document.createElement('div');
+      userBubble.className = 'flex justify-end mb-2';
+      userBubble.innerHTML = `<div class="bubble-user px-3 py-2 text-sm font-bold" style="color:#e2e8f0; max-width:85%;">${sc.prompt}</div>`;
+      chat.appendChild(userBubble);
+
+      // Typing indicator
+      const typingBubble = document.createElement('div');
+      typingBubble.className = 'flex justify-start mb-2';
+      typingBubble.id = 'typing-indicator';
+      typingBubble.innerHTML = `<div class="bubble-ai-raw px-3 py-2 flex gap-1 items-center">
+        <span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:#e879f9;display:inline-block;"></span>
+        <span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:#e879f9;display:inline-block;"></span>
+        <span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:#e879f9;display:inline-block;"></span></div>`;
+      chat.appendChild(typingBubble);
+      chat.scrollTop = chat.scrollHeight;
+
+      setTimeout(() => {
+        document.getElementById('typing-indicator')?.remove();
+        const answer = isTuned ? sc.tunedAnswer : sc.rawAnswer;
+        const bubbleCls = isTuned ? 'bubble-ai-tuned' : 'bubble-ai-raw';
+        const nameColor = isTuned ? '#39ff14' : '#ff6b35';
+        const nameLabel = isTuned ? 'AI 비서 (튜닝 완료)' : 'Raw Model (입력 직후)';
+
+        const aiBubble = document.createElement('div');
+        aiBubble.className = 'flex justify-start mb-2';
+        aiBubble.innerHTML = `<div class="${bubbleCls} px-3 py-2" style="max-width:90%;">
+          <p class="text-xs font-bold mb-1" style="color:${nameColor}; letter-spacing:.05em;">${nameLabel}</p>
+          <p class="text-sm" style="color:#e2e8f0; line-height:1.55; white-space:pre-wrap;">${answer}</p></div>`;
+        chat.appendChild(aiBubble);
+        chat.scrollTop = chat.scrollHeight;
+
+        document.getElementById('p2-feedback-row').classList.remove('hidden');
+        document.getElementById('p2-feedback-row').classList.add('flex');
+        // Update feedback button labels based on tuned state
+        document.getElementById('p2-fb-down').textContent = isTuned ? '👎 역훈련 (강화 취소)' : '👎 페널티 → 재훈련';
+        document.getElementById('p2-fb-up').textContent = isTuned ? '👍 보상 (강화 유지)' : '👍 보상';
+        p2HasAIMsg = true;
+        p2AwaitingFeedback = true;
+      }, 900);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 2 — FEEDBACK (3-axis)
+    // ═══════════════════════════════════════════════════════════════
+    function p2Feedback(isPositive) {
+      const sc = currentP2Scenario;
+      const mainAxis = sc.axis;  // e.g. 'empathy', 'safety', 'expertise'
+
+      // Determine direction based on current tuned state of the main axis
+      // If already above threshold and downvoting → REVERSE (decrease)
+      // Otherwise normal behavior
+      const isTuned = p2Axes[mainAxis] >= THRESHOLD;
+
+      if (isPositive) {
+        p2UpCount++;
+        document.getElementById('p2-up-count').textContent = p2UpCount;
+
+        // Guard: if primary axis is already maxed, skip all deltas (prevent secondary bleed)
+        const primaryAtMax = p2Axes[mainAxis] >= 100;
+        if (!primaryAtMax) {
+          ['expertise', 'safety', 'empathy'].forEach(axis => {
+            const d = sc.upDelta[axis] || 0;
+            if (d) p2Axes[axis] = Math.min(100, p2Axes[axis] + d);
+          });
+        }
+        addP2Log(true, sc.upDelta, mainAxis, false);
+      } else {
+        p2DownCount++;
+        document.getElementById('p2-down-count').textContent = p2DownCount;
+
+        if (isTuned) {
+          // Tuned state → downvote REVERSES the main axis (penalty on fine-tuned behavior)
+          // Guard: if primary axis is already at 0, skip all deltas
+          const primaryAtMin = p2Axes[mainAxis] <= 0;
+          if (!primaryAtMin) {
+            ['expertise', 'safety', 'empathy'].forEach(axis => {
+              const d = sc.downDelta[axis] || 0;
+              if (d) p2Axes[axis] = Math.max(0, p2Axes[axis] - d);
+            });
+          }
+          addP2Log(false, sc.downDelta, mainAxis, true); // isReverse = true
+        } else {
+          // Raw state → downvote TRAINS toward threshold (normal penalty path)
+          // Guard: if primary axis is already maxed, skip all deltas
+          const primaryAtMax = p2Axes[mainAxis] >= 100;
+          if (!primaryAtMax) {
+            ['expertise', 'safety', 'empathy'].forEach(axis => {
+              const d = sc.downDelta[axis] || 0;
+              if (d) p2Axes[axis] = Math.min(100, p2Axes[axis] + d);
+            });
+          }
+          addP2Log(false, sc.downDelta, mainAxis, false);
+        }
+      }
+
+      // Update gauges
+      updateP2Gauges();
+
+      // Hide feedback row
+      document.getElementById('p2-feedback-row').classList.add('hidden');
+      document.getElementById('p2-feedback-row').classList.remove('flex');
+      p2AwaitingFeedback = false;
+    }
+
+    function updateP2Gauges() {
+      ['expertise', 'safety', 'empathy'].forEach(axis => {
+        const val = p2Axes[axis];
+        const fill = document.getElementById(`p2-gauge-${axis}`);
+        const numEl = document.getElementById(`p2-val-${axis}`);
+        if (!fill || !numEl) return;
+        numEl.textContent = Math.round(val);
+        fill.style.width = val + '%';
+        if (val >= THRESHOLD) {
+          fill.style.background = 'linear-gradient(90deg, #00aa00, #39ff14)';
+          fill.style.boxShadow = '0 0 10px rgba(57,255,20,0.5)';
+        } else if (val >= THRESHOLD * 0.55) {
+          fill.style.background = 'linear-gradient(90deg, #ca8a04, #ffe600)';
+          fill.style.boxShadow = '0 0 8px rgba(255,230,0,0.4)';
+        } else {
+          fill.style.background = 'linear-gradient(90deg, #7c3aed, #a855f7)';
+          fill.style.boxShadow = 'none';
+        }
+      });
+    }
+
+    function addP2Log(isPositive, deltas, mainAxis, isReverse) {
+      const log = document.getElementById('p2-log');
+      const placeholder = log.querySelector('.text-gray-600');
+      if (placeholder) placeholder.remove();
+      const entry = document.createElement('div');
+      entry.className = 'flex items-center gap-1 flex-wrap';
+      const now = new Date();
+      const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+      let dParts;
+      if (isReverse) {
+        // Reverse mode: show deltas as negative in red
+        dParts = Object.entries(deltas).filter(([, v]) => v > 0).map(([k, v]) =>
+          `<span style="color:#ef4444;">${k[0].toUpperCase()}-${v}</span>`);
+      } else {
+        const color = isPositive ? '#39ff14' : '#fb923c';
+        dParts = Object.entries(deltas).filter(([, v]) => v > 0).map(([k, v]) =>
+          `<span style="color:${color};">${k[0].toUpperCase()}+${v}</span>`);
+      }
+
+      const emoji = isPositive ? '👍' : '👎';
+      entry.innerHTML = `<span class="text-gray-600">${ts}</span><span>${emoji}</span>${dParts.join(' ')}`;
+
+      const nowTuned = p2Axes[mainAxis] >= THRESHOLD;
+      if (isReverse) {
+        entry.innerHTML += ` <span style="color:#ef4444; font-size:10px;">↩ 역훈련!</span>`;
+      } else if (nowTuned) {
+        entry.innerHTML += ` <span style="color:#ffe600; font-size:10px;">★ 튜닝!</span>`;
+      }
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  INIT
+    // ═══════════════════════════════════════════════════════════════
+    function init() {
+      buildScenarioList();
+      buildP2ScenarioList();
+      selectP2Scenario('tone'); // default
+      switchPhase(1);
+    }
+
+    init();
+  </script>
+</body>
+
+</html>
