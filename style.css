@@ -1,0 +1,366 @@
+/* ── Global reset & body ─────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #060810;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Noto Sans KR', sans-serif;
+  overflow: hidden;
+}
+
+/* ── 4:3 Projector Container ──────────────────────────────────── */
+#app-shell {
+  width: min(100vw, calc(100vh * 4 / 3));
+  aspect-ratio: 4 / 3;
+  max-width: 1024px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #0c1120;
+  border: 1px solid rgba(0, 245, 255, 0.15);
+  box-shadow: 0 0 60px rgba(0, 245, 255, 0.08), 0 0 120px rgba(255, 0, 255, 0.06);
+  overflow: hidden;
+}
+
+/* ── Scanline overlay ─────────────────────────────────────────── */
+#app-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(180deg,
+      transparent 0px,
+      transparent 3px,
+      rgba(0, 0, 0, 0.08) 3px,
+      rgba(0, 0, 0, 0.08) 4px);
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ── Neon glow borders ────────────────────────────────────────── */
+.panel-left {
+  border-right: 1px solid rgba(0, 245, 255, 0.2);
+}
+
+.glow-cyan {
+  text-shadow: 0 0 12px rgba(0, 245, 255, 0.8), 0 0 24px rgba(0, 245, 255, 0.4);
+}
+
+.glow-magenta {
+  text-shadow: 0 0 12px rgba(255, 0, 255, 0.8), 0 0 24px rgba(255, 0, 255, 0.4);
+}
+
+.glow-green {
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.9);
+}
+
+.glow-yellow {
+  text-shadow: 0 0 10px rgba(255, 230, 0, 0.9);
+}
+
+.neon-border-cyan {
+  border: 1px solid rgba(0, 245, 255, 0.4);
+  box-shadow: 0 0 8px rgba(0, 245, 255, 0.2);
+}
+
+.neon-border-magenta {
+  border: 1px solid rgba(255, 0, 255, 0.4);
+  box-shadow: 0 0 8px rgba(255, 0, 255, 0.2);
+}
+
+/* ── Phase tab styling ────────────────────────────────────────── */
+.tab-btn {
+  transition: all 0.2s ease;
+  position: relative;
+  letter-spacing: 0.02em;
+}
+
+.tab-btn.active-phase1 {
+  color: #00f5ff;
+  border-bottom: 2px solid #00f5ff;
+}
+
+.tab-btn.active-phase2 {
+  color: #c084fc;
+  border-bottom: 2px solid #c084fc;
+}
+
+.tab-btn:not(.active-phase1):not(.active-phase2) {
+  color: #374151;
+}
+
+.tab-btn:hover:not(.active-phase1):not(.active-phase2) {
+  color: #6b7280;
+}
+
+/* ── Probability bars ─────────────────────────────────────────── */
+.prob-bar-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #0f1929;
+}
+
+.prob-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bar-1 {
+  background: #00c8d7;
+  box-shadow: 0 0 8px rgba(0, 200, 215, 0.4);
+}
+
+.bar-2 {
+  background: #a855f7;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.35);
+}
+
+.bar-3 {
+  background: #f97316;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+}
+
+.bar-1.active-bar {
+  background: #00f5ff;
+  box-shadow: 0 0 14px rgba(0, 245, 255, 0.7);
+}
+
+.bar-2.active-bar {
+  background: #c084fc;
+  box-shadow: 0 0 14px rgba(192, 132, 252, 0.7);
+}
+
+.bar-3.active-bar {
+  background: #fb923c;
+  box-shadow: 0 0 14px rgba(251, 146, 60, 0.7);
+}
+
+/* ── Token chip animation ─────────────────────────────────────── */
+@keyframes tokenPop {
+  0% {
+    transform: scale(0.5) translateY(10px);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.1) translateY(-2px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.token-chip {
+  display: inline-block;
+  animation: tokenPop 0.35s ease forwards;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.cursor-blink {
+  animation: blink 0.8s infinite;
+}
+
+/* ── Gauge ────────────────────────────────────────────────────── */
+.gauge-track {
+  background: #1a2540;
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s ease, background-color 0.5s ease;
+}
+
+/* ── Chat bubbles ─────────────────────────────────────────────── */
+.bubble-user {
+  background: rgba(0, 245, 255, 0.12);
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  border-radius: 14px 14px 2px 14px;
+}
+
+.bubble-ai-raw {
+  background: rgba(255, 0, 255, 0.1);
+  border: 1px solid rgba(255, 0, 255, 0.3);
+  border-radius: 14px 14px 14px 2px;
+}
+
+.bubble-ai-tuned {
+  background: rgba(57, 255, 20, 0.1);
+  border: 1px solid rgba(57, 255, 20, 0.35);
+  border-radius: 14px 14px 14px 2px;
+}
+
+/* ── Scenario chip ────────────────────────────────────────────── */
+.scenario-chip {
+  cursor: pointer;
+  transition: all 0.18s ease;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+.scenario-chip:hover {
+  border-color: rgba(0, 200, 215, 0.5);
+  background: rgba(0, 200, 215, 0.07);
+}
+
+.scenario-chip.selected {
+  border-color: #00c8d7;
+  background: rgba(0, 200, 215, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(0, 200, 215, 0.15);
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 245, 255, 0.25);
+  border-radius: 99px;
+}
+
+/* ── Feedback button ─────────────────────────────────────────── */
+.fb-btn {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  padding: 6px 14px;
+  cursor: pointer;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+
+.fb-up {
+  border: 2px solid rgba(57, 255, 20, 0.6);
+  background: rgba(57, 255, 20, 0.12);
+}
+
+.fb-down {
+  border: 2px solid rgba(255, 107, 53, 0.6);
+  background: rgba(255, 107, 53, 0.12);
+}
+
+.fb-up:hover {
+  border-color: #39ff14;
+  background: rgba(57, 255, 20, 0.22);
+  box-shadow: 0 0 18px rgba(57, 255, 20, 0.55);
+}
+
+.fb-down:hover {
+  border-color: #ff6b35;
+  background: rgba(255, 107, 53, 0.22);
+  box-shadow: 0 0 18px rgba(255, 107, 53, 0.55);
+}
+
+/* ── Send button ─────────────────────────────────────────────── */
+.send-btn {
+  background: linear-gradient(135deg, #8b00cc, #ff00ff);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.send-btn:hover {
+  box-shadow: 0 0 16px rgba(255, 0, 255, 0.6);
+  transform: scale(1.04);
+}
+
+/* ── Pulse anim for weight badge ─────────────────────────────── */
+@keyframes pulseBadge {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.6);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(57, 255, 20, 0);
+  }
+}
+
+.pulse-badge {
+  animation: pulseBadge 1.4s ease infinite;
+}
+
+/* ── Hallucination warning ─────────────────────────────────────── */
+@keyframes warningFlash {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.warning-flash {
+  animation: warningFlash 1.2s ease 2;
+}
+
+/* ── typing dots ─────────────────────────────────────────────── */
+@keyframes dot {
+
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: .4;
+  }
+
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.typing-dot:nth-child(1) {
+  animation: dot 1.2s 0s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation: dot 1.2s 0.2s infinite;
+}
+
+.typing-dot:nth-child(3) {
+  animation: dot 1.2s 0.4s infinite;
+}
+
+/* ── Grid lines ─────────────────────────────────────────────── */
+.grid-line {
+  border-top: 1px dashed rgba(255, 255, 255, 0.05);
+}
