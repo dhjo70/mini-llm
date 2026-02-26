@@ -94,11 +94,11 @@ body {
 }
 
 .tab-btn:not(.active-phase1):not(.active-phase2) {
-  color: #374151;
+  color: #9ca3af;
 }
 
 .tab-btn:hover:not(.active-phase1):not(.active-phase2) {
-  color: #6b7280;
+  color: #cbd5e1;
 }
 
 /* ── Probability bars ─────────────────────────────────────────── */
@@ -363,4 +363,47 @@ body {
 /* ── Grid lines ─────────────────────────────────────────────── */
 .grid-line {
   border-top: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+/* ── Custom Range Slider ─────────────────────────────────────── */
+input[type=range] {
+  -webkit-appearance: none;
+  background: rgba(168, 85, 247, 0.2);
+  border-radius: 4px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #a855f7;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+  border: 2px solid #fff;
+  transition: transform 0.1s;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* ── Button Tactile Effects ─────────────────────────────────────── */
+button {
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* ── Hallucination Shake ─────────────────────────────────────── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+.shake-anim {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  box-shadow: inset 0 0 15px rgba(249, 115, 22, 0.4);
 }

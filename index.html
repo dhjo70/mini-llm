@@ -46,7 +46,7 @@
     };
   </script>
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 
 <body>
@@ -57,42 +57,41 @@
   <div id="app-shell">
 
     <!-- ── TOP NAV BAR ──────────────────────────────────────────── -->
-    <header class="flex items-center justify-between px-5 border-b border-white/8"
-      style="background:#070c18; height:38px;">
+    <header class="flex items-center justify-between px-5 border-b border-white/8" class="bg-[#070c18] h-[46px]">
       <!-- Logo / title -->
       <div class="flex items-center gap-2">
         <span class="font-title font-bold tracking-widest"
-          style="color:#00c8d7; font-size:15px; letter-spacing:.12em;">MINI-LLM</span>
-        <span class="font-mono text-gray-600" style="font-size:10px;">v1.0</span>
+          style="color:#00c8d7; font-size:19px; letter-spacing:.12em;">MINI-LLM</span>
+        <span class="font-mono text-gray-400" style="font-size:13px;">v1.0</span>
       </div>
       <!-- Phase tabs -->
       <nav class="flex h-full">
         <button id="tab-phase1" class="tab-btn active-phase1 font-mono font-bold px-5 h-full"
-          style="font-size:11px; letter-spacing:.06em;" onclick="switchPhase(1)">
+          style="font-size:14px; letter-spacing:.06em;" onclick="switchPhase(1)">
           PHASE 1 &nbsp;·&nbsp; PRE-TRAINING
         </button>
         <button id="tab-phase2" class="tab-btn font-mono font-bold px-5 h-full"
-          style="font-size:11px; letter-spacing:.06em;" onclick="switchPhase(2)">
+          style="font-size:14px; letter-spacing:.06em;" onclick="switchPhase(2)">
           PHASE 2 &nbsp;·&nbsp; FINE-TUNING
         </button>
       </nav>
       <!-- Clock -->
-      <div class="font-mono text-gray-600" id="clock" style="font-size:11px;">--:--:--</div>
+      <div class="font-mono text-gray-400" id="clock" style="font-size:14px;">--:--:--</div>
     </header>
 
     <!-- ── MAIN CONTENT (two-panel split) ─────────────────────── -->
     <main class="flex flex-1 overflow-hidden" style="min-height:0;">
 
       <!-- ═══════════ LEFT PANEL — Under the Hood ═══════════ -->
-      <section class="panel-left flex flex-col" style="width:42%; background:#080e1c; overflow:hidden;">
+      <section class="panel-left flex flex-col w-[42%] shrink-0 bg-[#080e1c] overflow-hidden">
 
         <!-- ─── PHASE 1 LEFT ─────────────────────────────────── -->
         <div id="p1-left" class="flex flex-col h-full overflow-hidden" style="padding: 14px 14px 12px;">
-          <p class="font-mono mb-3" style="color:#00c8d7; font-size:11px; letter-spacing:.18em;">UNDER THE HOOD</p>
+          <p class="font-mono mb-3" style="color:#00c8d7; font-size:14px; letter-spacing:.18em;">UNDER THE HOOD</p>
 
           <!-- Scenario selector -->
           <div class="mb-3">
-            <p class="font-mono mb-1.5" style="color:#374151; font-size:11px; letter-spacing:.12em;">SCENARIO</p>
+            <p class="font-mono mb-1.5" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">SCENARIO</p>
             <div class="flex flex-col gap-1" id="scenario-list">
               <!-- Populated by JS -->
             </div>
@@ -101,12 +100,12 @@
           <!-- Temperature Slider -->
           <div class="mb-2">
             <div class="flex items-center justify-between mb-1.5">
-              <p class="font-mono" style="color:#374151; font-size:11px; letter-spacing:.12em;">TEMPERATURE</p>
+              <p class="font-mono" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">TEMPERATURE</p>
               <div class="flex items-center gap-2">
-                <span class="font-mono" style="color:#6b7280; font-size:10px;">0.0 결정론적</span>
+                <span class="font-mono" style="color:#cbd5e1; font-size:13px;">0.0 결정론적</span>
                 <span class="font-mono font-bold" id="p1-temp-val"
-                  style="color:#a855f7; font-size:14px; min-width:28px; text-align:right;">0.5</span>
-                <span class="font-mono" style="color:#6b7280; font-size:10px;">1.0 창의적</span>
+                  style="color:#a855f7; font-size:17px; min-width:28px; text-align:right;">0.5</span>
+                <span class="font-mono" style="color:#cbd5e1; font-size:13px;">1.0 창의적</span>
               </div>
             </div>
             <input type="range" id="p1-temp-slider" min="0" max="1" step="0.05" value="0.5"
@@ -115,7 +114,7 @@
 
           <!-- Probability Bars section -->
           <div class="flex-1 flex flex-col min-h-0">
-            <p class="font-mono mb-2" style="color:#374151; font-size:11px; letter-spacing:.12em;">TOKEN PROBABILITY
+            <p class="font-mono mb-2" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">TOKEN PROBABILITY
               DISTRIBUTION</p>
             <div id="prob-bars" class="flex flex-col"></div>
           </div>
@@ -123,35 +122,35 @@
           <!-- Selected token display -->
           <div class="mt-3 rounded-md px-3 py-2" style="background:#060f1a; border:1px solid rgba(0,200,215,0.2);">
             <div class="flex items-center justify-between mb-1">
-              <p class="font-mono" style="color:#374151; font-size:11px; letter-spacing:.12em;">SELECTED TOKEN</p>
+              <p class="font-mono" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">SELECTED TOKEN</p>
               <p id="p1-hallucination-warn" class="font-mono hidden warning-flash"
-                style="color:#f97316; font-size:11px;">HALLUCINATION DETECTED</p>
+                style="color:#f97316; font-size:14px;">HALLUCINATION DETECTED</p>
             </div>
             <p id="p1-selected-token" class="font-mono font-bold"
-              style="color:#00f5ff; font-size:26px; min-height:1.5em; letter-spacing:.04em;">&nbsp;</p>
+              style="color:#00f5ff; font-size:32px; min-height:1.5em; letter-spacing:.04em;">&nbsp;</p>
           </div>
         </div>
 
         <!-- ─── PHASE 2 LEFT ─────────────────────────────────── -->
         <div id="p2-left" class="flex flex-col h-full p-3 gap-2 hidden">
-          <p class="font-mono" style="color:#ff00ff; font-size:11px; letter-spacing:.18em;">◈ UNDER THE HOOD</p>
+          <p class="font-mono" style="color:#ff00ff; font-size:14px; letter-spacing:.18em;">◈ UNDER THE HOOD</p>
 
           <!-- Scenario selector -->
           <div>
-            <p class="font-mono mb-1" style="color:#374151; font-size:11px; letter-spacing:.12em;">TRAINING SCENARIO</p>
+            <p class="font-mono mb-1" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">TRAINING SCENARIO</p>
             <div class="flex flex-col gap-1" id="p2-scenario-list"></div>
           </div>
 
           <!-- 3-axis weight gauges -->
           <div class="rounded-lg p-2 border border-white/10" style="background:#0c1322;">
-            <p class="font-mono mb-2" style="color:#374151; font-size:11px; letter-spacing:.12em;">MODEL WEIGHTS (0–100)
+            <p class="font-mono mb-2" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">MODEL WEIGHTS (0–100)
             </p>
             <!-- Empathy -->
             <div class="mb-2">
               <div class="flex items-center justify-between mb-1">
                 <span class="font-mono font-bold"
-                  style="color:#a855f7; font-size:13px; letter-spacing:.06em;">EMPATHY</span>
-                <span class="font-mono font-bold" id="p2-val-empathy" style="color:#a855f7; font-size:14px;">0</span>
+                  style="color:#a855f7; font-size:16px; letter-spacing:.06em;">EMPATHY</span>
+                <span class="font-mono font-bold" id="p2-val-empathy" style="color:#a855f7; font-size:17px;">0</span>
               </div>
               <div class="gauge-track" style="height:8px;">
                 <div id="p2-gauge-empathy" class="gauge-fill"
@@ -167,8 +166,8 @@
             <div class="mb-2">
               <div class="flex items-center justify-between mb-1">
                 <span class="font-mono font-bold"
-                  style="color:#f97316; font-size:13px; letter-spacing:.06em;">SAFETY</span>
-                <span class="font-mono font-bold" id="p2-val-safety" style="color:#f97316; font-size:14px;">0</span>
+                  style="color:#f97316; font-size:16px; letter-spacing:.06em;">SAFETY</span>
+                <span class="font-mono font-bold" id="p2-val-safety" style="color:#f97316; font-size:17px;">0</span>
               </div>
               <div class="gauge-track" style="height:8px;">
                 <div id="p2-gauge-safety" class="gauge-fill"
@@ -184,8 +183,8 @@
             <div>
               <div class="flex items-center justify-between mb-1">
                 <span class="font-mono font-bold"
-                  style="color:#00c8d7; font-size:13px; letter-spacing:.06em;">EXPERTISE</span>
-                <span class="font-mono font-bold" id="p2-val-expertise" style="color:#00c8d7; font-size:14px;">0</span>
+                  style="color:#00c8d7; font-size:16px; letter-spacing:.06em;">EXPERTISE</span>
+                <span class="font-mono font-bold" id="p2-val-expertise" style="color:#00c8d7; font-size:17px;">0</span>
               </div>
               <div class="gauge-track" style="height:8px;">
                 <div id="p2-gauge-expertise" class="gauge-fill"
@@ -197,24 +196,34 @@
                 </div>
               </div>
             </div>
-            <p class="font-mono mt-1" style="color:#ffe600; font-size:10px;">| 임계치 50 ▲</p>
+            <p class="font-mono mt-1" style="color:#ffe600; font-size:13px;">| 임계치 50 ▲</p>
           </div>
 
           <!-- Feedback counts + log -->
           <div class="flex items-center gap-4 rounded-lg px-2 py-2 border border-white/10" style="background:#080e1c;">
             <div class="text-center">
-              <p class="font-mono" style="font-size:12px; color:#374151;">👍</p>
-              <p class="font-mono font-bold" style="color:#39ff14; font-size:16px;"><span id="p2-up-count">0</span></p>
+              <p class="font-mono" style="font-size:15px; color:#cbd5e1;"><svg class="w-4 h-4 mr-1" fill="none"
+                  stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                  </path>
+                </svg></p>
+              <p class="font-mono font-bold" style="color:#39ff14; font-size:20px;"><span id="p2-up-count">0</span></p>
             </div>
             <div class="text-center">
-              <p class="font-mono" style="font-size:12px; color:#374151;">👎</p>
-              <p class="font-mono font-bold" style="color:#fb923c; font-size:16px;"><span id="p2-down-count">0</span>
+              <p class="font-mono" style="font-size:15px; color:#cbd5e1;"><svg class="w-4 h-4 mr-1" fill="none"
+                  stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5">
+                  </path>
+                </svg></p>
+              <p class="font-mono font-bold" style="color:#fb923c; font-size:20px;"><span id="p2-down-count">0</span>
               </p>
             </div>
             <div class="flex-1">
               <div id="p2-log" class="flex flex-col gap-0.5 font-mono overflow-y-auto"
-                style="font-size:11px; max-height:56px;">
-                <span class="text-gray-600">— 피드백 없음 —</span>
+                style="font-size:14px; max-height:56px;">
+                <span class="text-gray-400">— 피드백 없음 —</span>
               </div>
             </div>
           </div>
@@ -223,48 +232,33 @@
       </section>
 
       <!-- ═══════════ RIGHT PANEL — Chat Interface ═══════════ -->
-      <section class="flex flex-col"
-        style="width:58%; background:#090e1a; overflow:hidden; border-left:1px solid rgba(255,255,255,0.05);">
+      <section class="flex flex-col w-[58%] shrink-0 bg-[#090e1a] overflow-hidden border-l border-white/5">
 
         <!-- ─── PHASE 1 RIGHT ─────────────────────────────────── -->
         <div id="p1-right" class="flex flex-col h-full" style="padding:14px 16px 12px;">
-          <p class="font-mono mb-3" style="color:#00c8d7; font-size:9px; letter-spacing:.18em;">TEXT GENERATION DEMO</p>
+          <p class="font-mono mb-3" style="color:#00c8d7; font-size:12px; letter-spacing:.18em;">TEXT GENERATION DEMO
+          </p>
 
           <!-- Generated sentence display -->
           <div class="rounded-md overflow-y-auto mb-3"
             style="background:#060c17; border:1px solid rgba(0,200,215,0.18); padding:14px 16px; min-height:0; flex:0 0 auto;">
-            <p class="font-mono mb-2" style="color:#1f2d40; font-size:9px; letter-spacing:.12em;">GENERATED SEQUENCE</p>
+            <p class="font-mono mb-2" style="color:#cbd5e1; font-size:12px; letter-spacing:.12em;">GENERATED SEQUENCE
+            </p>
             <div id="p1-sentence-display" class="font-bold leading-snug"
-              style="color:#e2e8f0; word-break:keep-all; font-size:20px;">
-              <span style="color:#1f3347;">시나리오를 선택하세요 →</span>
+              style="color:#e2e8f0; word-break:keep-all; font-size:24px;">
+              <span style="color:#cbd5e1;">시나리오를 선택하세요 →</span>
             </div>
             <!-- Token sequence chips row -->
             <div id="p1-token-history" class="flex flex-wrap gap-1 mt-3">
             </div>
           </div>
 
-          <!-- Step-by-step explanation cards -->
+          <!-- Dynamic Generation Log -->
           <div class="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden mb-3">
-            <p class="font-mono" style="color:#1f2d40; font-size:9px; letter-spacing:.12em;">HOW IT WORKS</p>
-            <div class="flex-1 flex flex-col gap-1.5 overflow-y-auto">
-              <div class="rounded-md px-3 py-2" style="background:#060c17; border:1px solid rgba(255,255,255,0.05);">
-                <p class="font-mono font-bold mb-0.5" style="color:#00c8d7; font-size:10px;">01 &nbsp; 컨텍스트 파악</p>
-                <p style="color:#4b5a70; font-size:11px; line-height:1.5;">모델은 지금까지 등장한 모든 단어를 벡터로 변환해 문맥을 수치화합니다.</p>
-              </div>
-              <div class="rounded-md px-3 py-2" style="background:#060c17; border:1px solid rgba(255,255,255,0.05);">
-                <p class="font-mono font-bold mb-0.5" style="color:#a855f7; font-size:10px;">02 &nbsp; 확률 계산</p>
-                <p style="color:#4b5a70; font-size:11px; line-height:1.5;">Softmax 함수를 통해 어휘집(Vocabulary)의 모든 단어에 확률을
-                  부여합니다. 합산 = 100%</p>
-              </div>
-              <div class="rounded-md px-3 py-2" style="background:#060c17; border:1px solid rgba(255,255,255,0.05);">
-                <p class="font-mono font-bold mb-0.5" style="color:#f97316; font-size:10px;">03 &nbsp; 샘플링 (환각의 원인)</p>
-                <p style="color:#4b5a70; font-size:11px; line-height:1.5;">항상 최고 확률 단어를 선택하진 않습니다. 낮은 확률의 단어가 뽑히면 <span
-                    style="color:#f97316;">Hallucination</span>이 됩니다.</p>
-              </div>
-              <div class="rounded-md px-3 py-2" style="background:#060c17; border:1px solid rgba(255,255,255,0.05);">
-                <p class="font-mono font-bold mb-0.5" style="color:#34d399; font-size:10px;">04 &nbsp; 반복 생성</p>
-                <p style="color:#4b5a70; font-size:11px; line-height:1.5;">선택된 단어를 컨텍스트에 추가하고 다시 01부터 반복. 이것이
-                  자기회귀(Autoregressive) 생성입니다.</p>
+            <p class="font-mono" style="color:#cbd5e1; font-size:12px; letter-spacing:.12em;">GENERATION LOG</p>
+            <div id="p1-generation-log" class="flex-1 flex flex-col gap-1.5 overflow-y-auto pr-2 pb-2">
+              <div class="text-gray-500 font-mono text-sm mt-2">
+                시나리오를 선택하고 생성을 시작하세요...
               </div>
             </div>
           </div>
@@ -273,36 +267,41 @@
           <div class="flex gap-2 items-center">
             <button id="p1-btn-next" onclick="p1NextToken()"
               class="font-mono font-bold text-white disabled:opacity-20 transition-all"
-              style="flex:1; padding:7px 0; border-radius:5px; font-size:11px; letter-spacing:.08em; background:transparent; border:1px solid rgba(0,200,215,0.5); color:#00c8d7;"
+              style="flex:1; padding:7px 0; border-radius:5px; font-size:14px; letter-spacing:.08em; background:transparent; border:1px solid rgba(0,200,215,0.5); color:#00c8d7;"
               onmouseover="if(!this.disabled) this.style.background='rgba(0,200,215,0.1)'"
               onmouseout="this.style.background='transparent'" disabled>
-              NEXT TOKEN
+              <span class="flex items-center justify-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                  </path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg> NEXT</span>
             </button>
-            <button id="p1-btn-hallucinate" onclick="p1HallucinateToken()"
-              class="font-mono font-bold disabled:opacity-20 transition-all"
-              style="flex:1; padding:7px 0; border-radius:5px; font-size:11px; letter-spacing:.08em; background:transparent; border:1px solid rgba(249,115,22,0.45); color:#f97316;"
-              onmouseover="if(!this.disabled) this.style.background='rgba(249,115,22,0.08)'"
-              onmouseout="this.style.background='transparent'" disabled>
-              HALLUCINATE
-            </button>
-            <button onclick="p1Reset()" class="font-mono transition-all"
-              style="padding:7px 12px; border-radius:5px; font-size:11px; letter-spacing:.06em; background:transparent; border:1px solid rgba(255,255,255,0.08); color:#374151;"
-              onmouseover="this.style.color='#6b7280'; this.style.borderColor='rgba(255,255,255,0.2)'"
-              onmouseout="this.style.color='#374151'; this.style.borderColor='rgba(255,255,255,0.08)'">
-              RESET
+            <button class="font-mono font-bold transition-all"
+              style="flex:0 0 100px; padding:7px 0; border-radius:5px; font-size:14px; letter-spacing:.08em; background:#1e293b; border:1px solid rgba(255,255,255,0.1); color:#94a3b8;"
+              onclick="p1Reset(true)" onmouseover="this.style.background='#334155'; this.style.color='#cbd5e1';"
+              onmouseout="this.style.background='#1e293b'; this.style.color='#94a3b8';">
+              <span class="flex items-center justify-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                  </path>
+                </svg> RESET</span>
             </button>
           </div>
         </div>
 
         <!-- ─── PHASE 2 RIGHT ─────────────────────────────────── -->
-        <div id="p2-right" class="flex flex-col h-full p-3 gap-2 hidden">
-          <p class="font-mono" style="color:#ff00ff; font-size:9px; letter-spacing:.18em;">◈ CHAT INTERFACE · RLHF DEMO
+        <div id="p2-right" class="flex flex-col h-full w-full p-3 gap-2 hidden">
+          <p class="font-mono" style="color:#ff00ff; font-size:12px; letter-spacing:.18em;">◈ CHAT INTERFACE · RLHF DEMO
           </p>
 
           <!-- Chat window -->
           <div id="p2-chat" class="flex-1 rounded-lg p-2 overflow-y-auto"
             style="background:#060d18; border:1px solid rgba(255,0,255,0.15); min-height:0;">
-            <div class="text-gray-600 text-xs text-center py-4">왼쪽에서 시나리오를 선택하고 아래 버튼을 누르세요</div>
+            <div class="text-gray-400 text-xs text-center py-4">왼쪽에서 시나리오를 선택하고 아래 버튼을 누르세요</div>
           </div>
 
           <!-- Fixed prompt display + send button -->
@@ -310,15 +309,27 @@
             style="background:#0c1322; border:1px solid rgba(255,0,255,0.3);">
             <span id="p2-prompt-text" class="flex-1 text-sm font-bold" style="color:#e2e8f0;">—</span>
             <button class="send-btn text-white font-mono font-bold px-4 py-2"
-              style="font-size:10px; letter-spacing:.06em;" onclick="p2SendMessage()">전송 ▶</button>
+              style="font-size:13px; letter-spacing:.06em;" onclick="p2SendMessage()">전송 ▶</button>
           </div>
 
           <!-- Feedback row (hidden until AI responds) -->
           <div id="p2-feedback-row" class="hidden gap-2 items-center rounded-lg p-2"
             style="background:#080e1c; border:1px solid rgba(255,255,255,0.06);">
-            <p class="font-mono" style="color:#374151; font-size:9px; flex:1;">이 답변에 대한 피드백</p>
-            <button id="p2-fb-up" class="fb-btn fb-up" onclick="p2Feedback(true)">👍 보상</button>
-            <button id="p2-fb-down" class="fb-btn fb-down" onclick="p2Feedback(false)">👎 트레이닝 (페널티)</button>
+            <p class="font-mono" style="color:#cbd5e1; font-size:12px; flex:1;">이 답변에 대한 피드백</p>
+            <button id="p2-fb-up" class="fb-btn fb-up" onclick="p2Feedback(true)"><span
+                class="flex items-center justify-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                  </path>
+                </svg> 보상</span></button>
+            <button id="p2-fb-down" class="fb-btn fb-down" onclick="p2Feedback(false)"><span
+                class="flex items-center justify-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5">
+                  </path>
+                </svg> 트레이닝 (페널티)</span></button>
           </div>
         </div>
 
@@ -327,21 +338,21 @@
 
     <!-- ── STATUS BAR ─────────────────────────────────────────────── -->
     <footer class="flex items-center gap-3 px-4 py-1 border-t border-white/06"
-      style="background:#060810; font-size:10px;">
-      <span class="text-gray-600 font-mono">MINI-LLM SIM · 2025 · AI Education Interactive</span>
+      style="background:#060810; font-size:13px;">
+      <span class="text-gray-400 font-mono">MINI-LLM SIM · 2025 · AI Education Interactive</span>
       <span class="flex-1"></span>
       <span id="status-indicator" class="flex items-center gap-1 text-gray-500">
         <span class="inline-block w-1.5 h-1.5 rounded-full bg-green-400" style="box-shadow:0 0 4px #39ff14;"></span>
         READY
       </span>
-      <span class="text-gray-700 font-mono">4:3 PROJECTOR MODE</span>
+      <span class="text-gray-400 font-mono">4:3 PROJECTOR MODE</span>
     </footer>
 
   </div><!-- /app-shell -->
 
 
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
 </body>
 
 </html>

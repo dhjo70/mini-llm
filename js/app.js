@@ -81,36 +81,58 @@ function buildScenarioList() {
     list.innerHTML = '';
     SCENARIOS.forEach((sc) => {
         const el = DOM.create('div', 'scenario-chip',
-            `<span class="font-mono font-bold" style="color:#00c8d7; font-size:10px; letter-spacing:.08em; min-width:16px;">${sc.id}</span>
-       <span style="color:#6b7280; font-size:10px; line-height:1.3;">${sc.context}</span>`,
+            `<span class="font-mono font-bold" style="color:#00c8d7; font-size: 13px; letter-spacing:.08em; min-width:16px;">${sc.id}</span>
+       <span style="color:#cbd5e1; font-size: 13px; line-height:1.3;">${sc.context}</span>`,
             'padding:7px 10px; display:flex; align-items:center; gap:8px;'
         );
         el.id = `scenario-chip-${sc.id}`;
-        el.onclick = () => selectScenario(sc.id);
+        el.onclick = () => selectP1Scenario(sc.id);
         list.appendChild(el);
     });
 }
 
-function selectScenario(id) {
-    p1Reset(false);
+function selectP1Scenario(id) {
     SimulatorState.p1.scenario = SCENARIOS.find(s => s.id === id);
-    // Update chip selection
-    SCENARIOS.forEach(s => {
-        const chip = DOM.get(`scenario-chip-${s.id}`);
-        chip.classList.toggle('selected', s.id === id);
-        chip.querySelector('span:last-child').style.color = s.id === id ? '#e2e8f0' : '#6b7280';
-    });
-    // Initialize sentence
-    SimulatorState.p1.tokens = SimulatorState.p1.scenario.context.split(' ');
+    SimulatorState.p1.tokens = [];
+    SimulatorState.p1.isRunning = false;
+
+    // Fetch initial tokens from dictionary based on context
+    const initialContext = SimulatorState.p1.scenario.context;
+    SimulatorState.p1.currentAvailableTokens = P1_DICTIONARY[initialContext] || P1_DICTIONARY["fallback"];
+
+    const list = DOM.get('scenario-list');
+    if (list) {
+        list.querySelectorAll('.scenario-chip').forEach(el => {
+            if (el.id === `scenario-chip-${id}`) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+
     renderP1Sentence();
-    // Show probability bars
-    renderProbBars(SimulatorState.p1.scenario.tokens);
+    const adjThis = applyTemperature(SimulatorState.p1.currentAvailableTokens.map(t => t.prob), SimulatorState.p1.temperature);
+    renderProbBars(SimulatorState.p1.currentAvailableTokens, -1, adjThis);
+
+    DOM.get('p1-selected-token').innerHTML = '&nbsp;';
+
+    // Clear log and add first entry
+    const logContainer = DOM.get('p1-generation-log');
+    if (logContainer) {
+        logContainer.innerHTML = '';
+        _addP1Log(`[${id}] 컨텍스트 초기화됨`);
+    }
+
     // Enable buttons
     DOM.get('p1-btn-next').disabled = false;
-    DOM.get('p1-btn-hallucinate').disabled = false;
-    // Clear selected token
-    DOM.get('p1-selected-token').innerHTML = '&nbsp;';
-    DOM.get('p1-hallucination-warn').classList.add('hidden');
+}
+
+function _addP1Log(message, isHighlight = false) {
+    const logContainer = DOM.get('p1-generation-log');
+    if (!logContainer) return;
+
+    const stepEl = DOM.create('div', 'p-2 rounded-md font-mono text-sm leading-snug', '', `background:#060c17; border:1px solid rgba(255,255,255,0.05); color:${isHighlight ? '#00c8d7' : '#cbd5e1'};`);
+    stepEl.innerHTML = `> ${message}`;
+    logContainer.appendChild(stepEl);
+    logContainer.scrollTop = logContainer.scrollHeight;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -128,10 +150,10 @@ function renderProbBars(tokens, highlightIdx = -1, adjProbs = null) {
         const barHtml = `
       <div class="flex items-center justify-between" style="margin-bottom:4px;">
         <div class="flex items-center gap-2">
-          <span class="font-mono font-bold" style="color:${col}; font-size:12px; min-width:68px; letter-spacing:.02em;">${t.word}</span>
-          ${isHl ? `<span class="font-mono" style="font-size:9px; color:${col}; letter-spacing:.1em; opacity:.8;">SELECTED</span>` : ''}
+          <span class="font-mono font-bold" style="color:${col}; font-size: 15px; min-width:68px; letter-spacing:.02em;">${t.word}</span>
+          ${isHl ? `<span class="font-mono" style="font-size: 12px; color:${col}; letter-spacing:.1em; opacity:.8;">SELECTED</span>` : ''}
         </div>
-        <span class="font-mono font-bold" style="color:${isHl ? col : '#2d3d52'}; font-size:12px;">${displayProb}%</span>
+        <span class="font-mono font-bold" style="color:${isHl ? col : '#2d3d52'}; font-size: 15px;">${displayProb}%</span>
       </div>
       <div class="prob-bar-wrap" style="height:8px;">
         <div class="prob-bar-fill bar-${(i % 4) + 1}${isHl ? ' active-bar' : ''}" id="bar-fill-${i}" style="width:0%;"></div>
@@ -154,27 +176,36 @@ function renderProbBars(tokens, highlightIdx = -1, adjProbs = null) {
 // ═══════════════════════════════════════════════════════════════
 function renderP1Sentence() {
     const disp = DOM.get('p1-sentence-display');
-    const context = SimulatorState.p1.scenario ? SimulatorState.p1.scenario.context.split(' ') : [];
-    const extras = SimulatorState.p1.tokens.slice(context.length);
+    const contextWords = SimulatorState.p1.scenario ? SimulatorState.p1.scenario.context.split(' ') : [];
+    const generatedTokens = SimulatorState.p1.tokens;
 
     disp.innerHTML = '';
-    SimulatorState.p1.tokens.forEach((w, i) => {
-        const isContext = i < context.length;
+
+    // 1. Render base context
+    contextWords.forEach(w => {
         const span = document.createElement('span');
         span.textContent = w + ' ';
-        span.style.color = isContext ? '#2d4a6a' : '#00c8d7';
+        span.style.color = '#cbd5e1';
+        disp.appendChild(span);
+    });
+
+    // 2. Render generated tokens
+    generatedTokens.forEach(w => {
+        const span = document.createElement('span');
+        span.textContent = w + ' ';
+        span.style.color = '#00c8d7';
         disp.appendChild(span);
     });
 
     const cursor = DOM.create('span', 'cursor-blink', '|', 'color:#00c8d7;');
     disp.appendChild(cursor);
 
-    // Token chips
+    // Token chips history
     const hist = DOM.get('p1-token-history');
     hist.innerHTML = '';
-    extras.forEach((w, i) => {
+    generatedTokens.forEach((w, i) => {
         const chip = DOM.create('span', 'token-chip font-mono font-bold', w,
-            `display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;background:rgba(0,200,215,0.1);border:1px solid rgba(0,200,215,0.3);color:#00c8d7;animation-delay:${i * 0.04}s;`
+            `display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size: 14px;background:rgba(0,200,215,0.1);border:1px solid rgba(0,200,215,0.3);color:#00c8d7;animation-delay:${i * 0.04}s;`
         );
         hist.appendChild(chip);
     });
@@ -201,39 +232,44 @@ function sampleFromAdjProbs(adjProbs) {
 window.onTempChange = function (val) {
     SimulatorState.p1.temperature = parseFloat(val);
     DOM.get('p1-temp-val').textContent = SimulatorState.p1.temperature.toFixed(1);
-    if (SimulatorState.p1.scenario) {
-        const adj = applyTemperature(SimulatorState.p1.scenario.tokens.map(t => t.prob), SimulatorState.p1.temperature);
-        renderProbBars(SimulatorState.p1.scenario.tokens, -1, adj);
+    if (SimulatorState.p1.scenario && SimulatorState.p1.currentAvailableTokens) {
+        const adj = applyTemperature(SimulatorState.p1.currentAvailableTokens.map(t => t.prob), SimulatorState.p1.temperature);
+        renderProbBars(SimulatorState.p1.currentAvailableTokens, -1, adj);
     }
 };
 
 window.p1NextToken = function () {
-    if (!SimulatorState.p1.scenario || SimulatorState.p1.isRunning) return;
-    const adj = applyTemperature(SimulatorState.p1.scenario.tokens.map(t => t.prob), SimulatorState.p1.temperature);
+    if (!SimulatorState.p1.scenario || SimulatorState.p1.isRunning || !SimulatorState.p1.currentAvailableTokens) return;
+    const tokens = SimulatorState.p1.currentAvailableTokens;
+    const adj = applyTemperature(tokens.map(t => t.prob), SimulatorState.p1.temperature);
     if (SimulatorState.p1.temperature === 0) {
-        _p1AddToken(0, false, adj);
+        _p1AddToken(0, adj, tokens);
     } else {
         const winnerIdx = sampleFromAdjProbs(adj);
-        _p1RouletteAndAdd(winnerIdx, adj);
+        _p1RouletteAndAdd(winnerIdx, adj, false, tokens);
     }
 };
 
 window.p1HallucinateToken = function () {
-    if (!SimulatorState.p1.scenario || SimulatorState.p1.isRunning) return;
-    const adj = applyTemperature(SimulatorState.p1.scenario.tokens.map(t => t.prob), SimulatorState.p1.temperature);
-    _p1RouletteAndAdd(SimulatorState.p1.scenario.hallucinationIdx, adj, true);
+    if (!SimulatorState.p1.scenario || SimulatorState.p1.isRunning || !SimulatorState.p1.currentAvailableTokens) return;
+    const tokens = SimulatorState.p1.currentAvailableTokens;
+    const adj = applyTemperature(tokens.map(t => t.prob), SimulatorState.p1.temperature);
+
+    // Fallback/Hallucination is arbitrarily the last token in the array
+    const hallucinationIdx = tokens.length - 1;
+    _p1RouletteAndAdd(hallucinationIdx, adj, true, tokens);
 };
 
-function _p1RouletteAndAdd(winnerIdx, adjProbs, forceHallucination = false) {
+function _p1RouletteAndAdd(winnerIdx, adjProbs, forceHallucination = false, tokens) {
     SimulatorState.p1.isRunning = true;
-    const n = SimulatorState.p1.scenario.tokens.length;
+    const n = tokens.length;
     const totalCycles = 12;
     let cycle = 0;
     let current = 0;
     const baseDelay = 60;
 
     function step() {
-        renderProbBars(SimulatorState.p1.scenario.tokens, current % n, adjProbs);
+        renderProbBars(tokens, current % n, adjProbs);
         cycle++;
         current++;
         if (cycle < totalCycles) {
@@ -243,25 +279,23 @@ function _p1RouletteAndAdd(winnerIdx, adjProbs, forceHallucination = false) {
             setTimeout(step, delay);
         } else {
             const isHallucination = forceHallucination || (winnerIdx !== 0);
-            renderProbBars(SimulatorState.p1.scenario.tokens, winnerIdx, adjProbs);
-            _p1FinishToken(winnerIdx, isHallucination);
+            renderProbBars(tokens, winnerIdx, adjProbs);
+            _p1FinishToken(winnerIdx, isHallucination, tokens, adjProbs[winnerIdx]);
         }
     }
     step();
 }
 
-function _p1AddToken(tokenIdx, isHallucination, adjProbs) {
+function _p1AddToken(tokenIdx, adjProbs, tokens) {
     SimulatorState.p1.isRunning = true;
-    renderProbBars(SimulatorState.p1.scenario.tokens, tokenIdx, adjProbs);
-    _p1FinishToken(tokenIdx, isHallucination);
+    renderProbBars(tokens, tokenIdx, adjProbs);
+    _p1FinishToken(tokenIdx, false, tokens, adjProbs[tokenIdx]);
 }
 
-function _p1FinishToken(tokenIdx, isHallucination) {
-    const token = SimulatorState.p1.scenario.tokens[tokenIdx];
+function _p1FinishToken(tokenIdx, isHallucination, tokens, selectedProb) {
+    const token = tokens[tokenIdx];
     const selEl = DOM.get('p1-selected-token');
     selEl.innerHTML = '';
-    const warn = DOM.get('p1-hallucination-warn');
-    warn.classList.add('hidden');
 
     setTimeout(() => {
         const chip = DOM.create('span', 'token-chip font-mono font-bold', token.word);
@@ -270,71 +304,89 @@ function _p1FinishToken(tokenIdx, isHallucination) {
         chip.style.letterSpacing = '.04em';
         selEl.appendChild(chip);
 
-        if (isHallucination) {
-            warn.classList.remove('hidden');
-            SimulatorState.p1.tokens.push(token.word);
-            _renderSentenceWithHallucination();
-        } else {
-            SimulatorState.p1.tokens.push(token.word);
-            renderP1Sentence();
+        SimulatorState.p1.tokens.push(token.word);
+        renderP1Sentence();
+
+        // Add log
+        const stepNum = SimulatorState.p1.tokens.length;
+        _addP1Log(`Step ${stepNum}: <b>[${token.word}]</b> 선택됨 <span style="color:#64748b;">(확률 ${selectedProb ? selectedProb.toFixed(1) : token.prob.toFixed(1)}%)</span>`, true);
+
+        // --- Autoregressive Update ---
+        // Calculate the new full string context
+        const newContextString = SimulatorState.p1.scenario.context + " " + SimulatorState.p1.tokens.join(' ');
+
+        // Find next tokens mapping, if none fallback
+        let nextTokens = P1_DICTIONARY[newContextString];
+
+        // Immediate check: if the newly selected token is an end token, halt generation entirely
+        if (token.word.endsWith('.') || token.word.endsWith('?') || token.word.endsWith('!') || token.word === '...') {
+            SimulatorState.p1.currentAvailableTokens = null;
+            DOM.get('prob-bars').innerHTML = '<div class="text-gray-500 font-mono mt-4 text-center">문장 생성이 완료되었습니다.</div>';
+            SimulatorState.p1.isRunning = false;
+            DOM.get('p1-btn-next').disabled = true;
+            _addP1Log(`문서 생성 완료 <span style="color:#f97316;">&lt;EOS&gt;</span>`);
+            return;
         }
-        SimulatorState.p1.isRunning = false;
+
+        if (!nextTokens) {
+            // If the last word somehow triggers a fallback end
+            const lastWord = SimulatorState.p1.tokens[SimulatorState.p1.tokens.length - 1];
+            if (lastWord.includes('보입니다') || lastWord.includes('예상됩니다') || lastWord.includes('것으로') || lastWord.includes('안녕')) {
+                nextTokens = P1_DICTIONARY["fallback_end"];
+            } else {
+                nextTokens = P1_DICTIONARY["fallback"];
+            }
+        }
+
+        // Update state and UI for the next step
+        SimulatorState.p1.currentAvailableTokens = nextTokens;
+        setTimeout(() => {
+            const adj = applyTemperature(nextTokens.map(t => t.prob), SimulatorState.p1.temperature);
+            renderProbBars(nextTokens, -1, adj);
+            SimulatorState.p1.isRunning = false;
+        }, 500); // Small delay to let the user absorb the generated word before updating bars
+
     }, 300);
-}
-
-function _renderSentenceWithHallucination() {
-    const disp = DOM.get('p1-sentence-display');
-    const context = SimulatorState.p1.scenario.context.split(' ');
-
-    disp.innerHTML = '';
-    SimulatorState.p1.tokens.forEach((w, i) => {
-        const isCtx = i < context.length;
-        const isLast = i === SimulatorState.p1.tokens.length - 1;
-        const span = document.createElement('span');
-        span.textContent = w + ' ';
-        if (isCtx) span.style.color = '#2d4a6a';
-        else if (isLast) span.style.color = '#f97316';
-        else span.style.color = '#00c8d7';
-        disp.appendChild(span);
-    });
-
-    const cursor = DOM.create('span', 'cursor-blink', '|', 'color:#00c8d7;');
-    disp.appendChild(cursor);
-
-    const hist = DOM.get('p1-token-history');
-    hist.innerHTML = '';
-    const extras = SimulatorState.p1.tokens.slice(context.length);
-    extras.forEach((w, i) => {
-        const isLast = i === extras.length - 1;
-        const styles = isLast
-            ? 'display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.4);color:#f97316;'
-            : 'display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;background:rgba(0,200,215,0.1);border:1px solid rgba(0,200,215,0.3);color:#00c8d7;';
-        const chip = DOM.create('span', 'token-chip font-mono font-bold', w, styles);
-        hist.appendChild(chip);
-    });
 }
 
 // ═══════════════════════════════════════════════════════════════
 //  PHASE 1 — RESET
 // ═══════════════════════════════════════════════════════════════
-window.p1Reset = function (clearSelection = true) {
-    SimulatorState.p1.isRunning = false;
-    SimulatorState.p1.tokens = SimulatorState.p1.scenario && !clearSelection ? SimulatorState.p1.scenario.context.split(' ') : [];
-    DOM.get('p1-sentence-display').innerHTML = '<span style="color:#1f3347;">시나리오를 선택하세요 →</span>';
-    DOM.get('p1-token-history').innerHTML = '';
-    DOM.get('prob-bars').innerHTML = '';
-    DOM.get('p1-selected-token').innerHTML = '&nbsp;';
-    DOM.hide('p1-hallucination-warn');
-    DOM.get('p1-btn-next').disabled = true;
-    DOM.get('p1-btn-hallucinate').disabled = true;
-
-    if (clearSelection) {
+window.p1Reset = function (fullReset = false) {
+    if (fullReset) {
         SimulatorState.p1.scenario = null;
-        SCENARIOS.forEach(s => {
-            const chip = DOM.get(`scenario-chip-${s.id}`);
-            if (chip) chip.classList.remove('selected');
-        });
+        SimulatorState.p1.tokens = [];
+        SimulatorState.p1.isRunning = false;
+        SimulatorState.p1.temperature = 0.5;
+        SimulatorState.p1.currentAvailableTokens = null;
+
+        DOM.get('p1-temp-slider').value = 0.5;
+        DOM.get('p1-temp-val').textContent = "0.5";
+
+        const list = DOM.get('scenario-list');
+        if (list) {
+            list.querySelectorAll('.scenario-chip').forEach(el => {
+                el.classList.remove('selected');
+                el.querySelector('span:last-child').style.color = '#cbd5e1';
+            });
+        }
+        DOM.get('p1-sentence-display').innerHTML = '<span style="color:#cbd5e1;">시나리오를 선택하세요 →</span>';
+        DOM.get('p1-token-history').innerHTML = '';
+        DOM.get('prob-bars').innerHTML = '<div class="text-gray-500 font-mono mt-4 text-center">대기 중...</div>';
+        DOM.get('p1-btn-next').disabled = true;
+        DOM.get('p1-selected-token').innerHTML = '&nbsp;';
+
+        const logContainer = DOM.get('p1-generation-log');
+        if (logContainer) {
+            logContainer.innerHTML = '<div class="text-gray-500 font-mono text-sm mt-2">시나리오를 선택하고 생성을 시작하세요...</div>';
+        }
+    } else {
+        // partial reset for new scenario
+        SimulatorState.p1.tokens = [];
+        DOM.get('p1-selected-token').innerHTML = '&nbsp;';
     }
+    DOM.hide('p1-hallucination-warn');
+    DOM.get('p1-btn-hallucinate').disabled = true;
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -346,7 +398,7 @@ function buildP2ScenarioList() {
     list.innerHTML = '';
     RLHF_SCENARIOS.forEach((sc) => {
         const el = DOM.create('div', 'scenario-chip',
-            `<span style="color:#9333ea; font-size:10px; line-height:1.3;">${sc.label}</span>`,
+            `<span style="color:#d8b4fe; font-size: 13px; line-height:1.3;">${sc.label}</span>`,
             'padding:6px 10px; display:flex; align-items:center; gap:8px;'
         );
         el.id = `p2-chip-${sc.id}`;
@@ -368,7 +420,7 @@ function selectP2Scenario(id) {
     // Reset chat
     const chat = DOM.get('p2-chat');
     chat.innerHTML = '';
-    const helper = DOM.create('div', 'text-gray-600 text-xs text-center py-4', '아래 버튼으로 AI와 대화를 시작하세요');
+    const helper = DOM.create('div', 'text-gray-400 text-xs text-center py-4', '아래 버튼으로 AI와 대화를 시작하세요');
     chat.appendChild(helper);
 
     SimulatorState.p2.hasAIMsg = false;
@@ -489,7 +541,7 @@ function updateP2Gauges() {
         fill.style.width = val + '%';
         if (val >= THRESHOLD) {
             fill.style.background = 'linear-gradient(90deg, #00aa00, #39ff14)';
-            fill.style.boxShadow = '0 0 10px rgba(57,255,20,0.5)';
+            fill.style.boxShadow = '0 0 15px rgba(57,255,20,0.8), 0 0 5px rgba(57,255,20,1)';
         } else if (val >= THRESHOLD * 0.55) {
             fill.style.background = 'linear-gradient(90deg, #ca8a04, #ffe600)';
             fill.style.boxShadow = '0 0 8px rgba(255,230,0,0.4)';
@@ -502,7 +554,7 @@ function updateP2Gauges() {
 
 function addP2Log(isPositive, deltas, mainAxis, isReverse) {
     const log = DOM.get('p2-log');
-    const placeholder = log.querySelector('.text-gray-600');
+    const placeholder = log.querySelector('.text-gray-400');
     if (placeholder) placeholder.remove();
 
     const entry = DOM.create('div', 'flex items-center gap-1 flex-wrap');
@@ -520,13 +572,13 @@ function addP2Log(isPositive, deltas, mainAxis, isReverse) {
     }
 
     const emoji = isPositive ? '👍' : '👎';
-    let innerHtml = `<span class="text-gray-600">${ts}</span><span>${emoji}</span>${dParts.join(' ')}`;
+    let innerHtml = `<span class="text-gray-400">${ts}</span><span>${emoji}</span>${dParts.join(' ')}`;
 
     const nowTuned = SimulatorState.p2.axes[mainAxis] >= THRESHOLD;
     if (isReverse) {
-        innerHtml += ` <span style="color:#ef4444; font-size:10px;">↩ 역훈련!</span>`;
+        innerHtml += ` <span style="color:#ef4444; font-size: 13px;">↩ 역훈련!</span>`;
     } else if (nowTuned) {
-        innerHtml += ` <span style="color:#ffe600; font-size:10px;">★ 튜닝!</span>`;
+        innerHtml += ` <span style="color:#ffe600; font-size: 13px;">★ 튜닝!</span>`;
     }
 
     entry.innerHTML = innerHtml;
