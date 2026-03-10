@@ -58,8 +58,8 @@ function switchPhase(phase) {
     SimulatorState.currentPhase = phase;
     const t1 = DOM.get('tab-phase1');
     const t2 = DOM.get('tab-phase2');
-    t1.className = 'tab-btn font-mono font-bold px-5 h-full';
-    t2.className = 'tab-btn font-mono font-bold px-5 h-full';
+    t1.className = 'nav-item font-mono';
+    t2.className = 'nav-item font-mono';
     if (phase === 1) {
         t1.classList.add('active-phase1');
         DOM.show('p1-left'); DOM.show('p1-right');
@@ -80,10 +80,9 @@ function buildScenarioList() {
     const list = DOM.get('scenario-list');
     list.innerHTML = '';
     SCENARIOS.forEach((sc) => {
-        const el = DOM.create('div', 'scenario-chip',
-            `<span class="font-mono font-bold" style="color:#00c8d7; font-size: 13px; letter-spacing:.08em; min-width:16px;">${sc.id}</span>
-       <span style="color:#cbd5e1; font-size: 13px; line-height:1.3;">${sc.context}</span>`,
-            'padding:7px 10px; display:flex; align-items:center; gap:8px;'
+        const el = DOM.create('div', 'scenario-chip px-3 py-2 flex items-center gap-3',
+            `<span class="font-mono font-semibold text-slate-700 whitespace-nowrap" style="letter-spacing:.05em; min-width:20px; font-size:1.1rem;">${sc.id}</span>
+       <span class="text-slate-800 font-medium" style="line-height:1.4; font-size:1rem;">${sc.context}</span>`
         );
         el.id = `scenario-chip-${sc.id}`;
         el.onclick = () => selectP1Scenario(sc.id);
@@ -129,7 +128,7 @@ function _addP1Log(message, isHighlight = false) {
     const logContainer = DOM.get('p1-generation-log');
     if (!logContainer) return;
 
-    const stepEl = DOM.create('div', 'p-2 rounded-md font-mono text-sm leading-snug', '', `background:#060c17; border:1px solid rgba(255,255,255,0.05); color:${isHighlight ? '#00c8d7' : '#cbd5e1'};`);
+    const stepEl = DOM.create('div', 'p-2 rounded-md font-mono text-sm leading-snug', '', `background:#f8fafc; border:1px solid #e2e8f0; color:${isHighlight ? '#0369a1' : '#475569'};`);
     stepEl.innerHTML = `> ${message}`;
     logContainer.appendChild(stepEl);
     logContainer.scrollTop = logContainer.scrollHeight;
@@ -141,8 +140,8 @@ function _addP1Log(message, isHighlight = false) {
 function renderProbBars(tokens, highlightIdx = -1, adjProbs = null) {
     const container = DOM.get('prob-bars');
     container.innerHTML = '';
-    const barColors = ['#00c8d7', '#a855f7', '#f97316', '#34d399'];
-    const barActiveColors = ['#00f5ff', '#c084fc', '#fb923c', '#6ee7b7'];
+    const barColors = ['#0ea5e9', '#9333ea', '#ea580c', '#10b981'];
+    const barActiveColors = ['#0284c7', '#7e22ce', '#c2410c', '#059669'];
     tokens.forEach((t, i) => {
         const isHl = i === highlightIdx;
         const col = isHl ? barActiveColors[i] : barColors[i];
@@ -151,9 +150,9 @@ function renderProbBars(tokens, highlightIdx = -1, adjProbs = null) {
       <div class="flex items-center justify-between" style="margin-bottom:4px;">
         <div class="flex items-center gap-2">
           <span class="font-mono font-bold" style="color:${col}; font-size: 15px; min-width:68px; letter-spacing:.02em;">${t.word}</span>
-          ${isHl ? `<span class="font-mono" style="font-size: 12px; color:${col}; letter-spacing:.1em; opacity:.8;">SELECTED</span>` : ''}
+          ${isHl ? `<span class="font-mono font-bold" style="font-size: 12px; color:${col}; letter-spacing:.1em; opacity:.8;">SELECTED</span>` : ''}
         </div>
-        <span class="font-mono font-bold" style="color:${isHl ? col : '#2d3d52'}; font-size: 15px;">${displayProb}%</span>
+        <span class="font-mono font-bold" style="color:${isHl ? col : '#94a3b8'}; font-size: 15px;">${displayProb}%</span>
       </div>
       <div class="prob-bar-wrap" style="height:8px;">
         <div class="prob-bar-fill bar-${(i % 4) + 1}${isHl ? ' active-bar' : ''}" id="bar-fill-${i}" style="width:0%;"></div>
@@ -185,7 +184,7 @@ function renderP1Sentence() {
     contextWords.forEach(w => {
         const span = document.createElement('span');
         span.textContent = w + ' ';
-        span.style.color = '#cbd5e1';
+        span.style.color = '#6b7280';
         disp.appendChild(span);
     });
 
@@ -193,11 +192,11 @@ function renderP1Sentence() {
     generatedTokens.forEach(w => {
         const span = document.createElement('span');
         span.textContent = w + ' ';
-        span.style.color = '#00c8d7';
+        span.style.color = '#0369a1';
         disp.appendChild(span);
     });
 
-    const cursor = DOM.create('span', 'cursor-blink', '|', 'color:#00c8d7;');
+    const cursor = DOM.create('span', 'cursor-blink', '|', 'color:#0369a1;');
     disp.appendChild(cursor);
 
     // Token chips history
@@ -205,7 +204,7 @@ function renderP1Sentence() {
     hist.innerHTML = '';
     generatedTokens.forEach((w, i) => {
         const chip = DOM.create('span', 'token-chip font-mono font-bold', w,
-            `display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size: 14px;background:rgba(0,200,215,0.1);border:1px solid rgba(0,200,215,0.3);color:#00c8d7;animation-delay:${i * 0.04}s;`
+            `display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size: 14px;background:#e0f2fe;border:1px solid #bae6fd;color:#0369a1;animation-delay:${i * 0.04}s;`
         );
         hist.appendChild(chip);
     });
@@ -299,7 +298,7 @@ function _p1FinishToken(tokenIdx, isHallucination, tokens, selectedProb) {
 
     setTimeout(() => {
         const chip = DOM.create('span', 'token-chip font-mono font-bold', token.word);
-        chip.style.color = isHallucination ? '#f97316' : '#00f5ff';
+        chip.style.color = isHallucination ? '#ea580c' : '#0369a1';
         chip.style.fontSize = '20px';
         chip.style.letterSpacing = '.04em';
         selEl.appendChild(chip);
@@ -309,7 +308,7 @@ function _p1FinishToken(tokenIdx, isHallucination, tokens, selectedProb) {
 
         // Add log
         const stepNum = SimulatorState.p1.tokens.length;
-        _addP1Log(`Step ${stepNum}: <b>[${token.word}]</b> 선택됨 <span style="color:#64748b;">(확률 ${selectedProb ? selectedProb.toFixed(1) : token.prob.toFixed(1)}%)</span>`, true);
+        _addP1Log(`Step ${stepNum}: <b>[${token.word}]</b> 선택됨 <span style="color:#94a3b8;">(확률 ${selectedProb ? selectedProb.toFixed(1) : token.prob.toFixed(1)}%)</span>`, true);
 
         // --- Autoregressive Update ---
         // Calculate the new full string context
@@ -321,10 +320,10 @@ function _p1FinishToken(tokenIdx, isHallucination, tokens, selectedProb) {
         // Immediate check: if the newly selected token is an end token, halt generation entirely
         if (token.word.endsWith('.') || token.word.endsWith('?') || token.word.endsWith('!') || token.word === '...') {
             SimulatorState.p1.currentAvailableTokens = null;
-            DOM.get('prob-bars').innerHTML = '<div class="text-gray-500 font-mono mt-4 text-center">문장 생성이 완료되었습니다.</div>';
+            DOM.get('prob-bars').innerHTML = '<div class="text-gray-500 font-mono mt-4 text-center font-bold">문장 생성이 완료되었습니다.</div>';
             SimulatorState.p1.isRunning = false;
             DOM.get('p1-btn-next').disabled = true;
-            _addP1Log(`문서 생성 완료 <span style="color:#f97316;">&lt;EOS&gt;</span>`);
+            _addP1Log(`문서 생성 완료 <span style="color:#ea580c;">&lt;EOS&gt;</span>`);
             return;
         }
 
@@ -367,12 +366,12 @@ window.p1Reset = function (fullReset = false) {
         if (list) {
             list.querySelectorAll('.scenario-chip').forEach(el => {
                 el.classList.remove('selected');
-                el.querySelector('span:last-child').style.color = '#cbd5e1';
+                el.querySelector('span:last-child').style.color = '#4b5563';
             });
         }
-        DOM.get('p1-sentence-display').innerHTML = '<span style="color:#cbd5e1;">시나리오를 선택하세요 →</span>';
+        DOM.get('p1-sentence-display').innerHTML = '<span style="color:#9ca3af;" class="font-bold">시나리오를 선택하세요 →</span>';
         DOM.get('p1-token-history').innerHTML = '';
-        DOM.get('prob-bars').innerHTML = '<div class="text-gray-500 font-mono mt-4 text-center">대기 중...</div>';
+        DOM.get('prob-bars').innerHTML = '<div class="text-gray-500 font-mono mt-4 text-center font-bold">대기 중...</div>';
         DOM.get('p1-btn-next').disabled = true;
         DOM.get('p1-selected-token').innerHTML = '&nbsp;';
 
@@ -380,6 +379,16 @@ window.p1Reset = function (fullReset = false) {
         if (logContainer) {
             logContainer.innerHTML = '<div class="text-gray-500 font-mono text-sm mt-2">시나리오를 선택하고 생성을 시작하세요...</div>';
         }
+
+        // Reset Phase 2 chat input placeholder
+        const promptEl = DOM.get('p2-prompt-text');
+        if (promptEl) {
+            promptEl.textContent = '왼쪽에서 시나리오를 선택하세요...';
+            promptEl.classList.add('text-slate-400');
+            promptEl.classList.remove('text-slate-800');
+        }
+        const sendBtn = DOM.get('p2-send-btn');
+        if (sendBtn) sendBtn.disabled = true;
     } else {
         // partial reset for new scenario
         SimulatorState.p1.tokens = [];
@@ -397,9 +406,8 @@ function buildP2ScenarioList() {
     if (!list) return;
     list.innerHTML = '';
     RLHF_SCENARIOS.forEach((sc) => {
-        const el = DOM.create('div', 'scenario-chip',
-            `<span style="color:#d8b4fe; font-size: 13px; line-height:1.3;">${sc.label}</span>`,
-            'padding:6px 10px; display:flex; align-items:center; gap:8px;'
+        const el = DOM.create('div', 'scenario-chip px-3 py-2 flex items-center gap-2',
+            `<span class="text-purple-700 font-bold" style="line-height:1.4; font-size:1.05rem;">${sc.label}</span>`
         );
         el.id = `p2-chip-${sc.id}`;
         el.onclick = () => selectP2Scenario(sc.id);
@@ -415,18 +423,23 @@ function selectP2Scenario(id) {
     });
     // Update prompt display
     const promptEl = DOM.get('p2-prompt-text');
-    if (promptEl) promptEl.textContent = SimulatorState.p2.scenario.prompt;
+    if (promptEl) {
+        promptEl.textContent = SimulatorState.p2.scenario.prompt;
+        // Swap colors from placeholder to actual typed
+        promptEl.classList.remove('text-slate-400');
+        promptEl.classList.add('text-slate-800');
+    }
+    const sendBtn = DOM.get('p2-send-btn');
+    if (sendBtn) sendBtn.disabled = false;
 
     // Reset chat
     const chat = DOM.get('p2-chat');
     chat.innerHTML = '';
-    const helper = DOM.create('div', 'text-gray-400 text-xs text-center py-4', '아래 버튼으로 AI와 대화를 시작하세요');
+    const helper = DOM.create('div', 'text-slate-400 text-sm font-medium text-center py-4', '아래 버튼으로 AI와 대화를 시작하세요');
     chat.appendChild(helper);
 
     SimulatorState.p2.hasAIMsg = false;
     SimulatorState.p2.awaitingFeedback = false;
-    DOM.hide('p2-feedback-row');
-    DOM.get('p2-feedback-row').classList.remove('flex');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -443,16 +456,16 @@ window.p2SendMessage = function () {
 
     // User bubble
     const userBubble = DOM.create('div', 'flex justify-end mb-2');
-    userBubble.innerHTML = `<div class="bubble-user px-3 py-2 text-sm font-bold" style="color:#e2e8f0; max-width:85%;">${sc.prompt}</div>`;
+    userBubble.innerHTML = `<div class="bubble-user px-3 py-2 text-sm font-semibold" style="max-width:85%;">${sc.prompt}</div>`;
     chat.appendChild(userBubble);
 
     // Typing indicator
     const typingBubble = DOM.create('div', 'flex justify-start mb-2');
     typingBubble.id = 'typing-indicator';
     typingBubble.innerHTML = `<div class="bubble-ai-raw px-3 py-2 flex gap-1 items-center">
-    <span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:#e879f9;display:inline-block;"></span>
-    <span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:#e879f9;display:inline-block;"></span>
-    <span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:#e879f9;display:inline-block;"></span></div>`;
+    <span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:#7e22ce;display:inline-block;"></span>
+    <span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:#7e22ce;display:inline-block;"></span>
+    <span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:#7e22ce;display:inline-block;"></span></div>`;
     chat.appendChild(typingBubble);
     chat.scrollTop = chat.scrollHeight;
 
@@ -460,21 +473,27 @@ window.p2SendMessage = function () {
         DOM.get('typing-indicator')?.remove();
         const answer = isTuned ? sc.tunedAnswer : sc.rawAnswer;
         const bubbleCls = isTuned ? 'bubble-ai-tuned' : 'bubble-ai-raw';
-        const nameColor = isTuned ? '#39ff14' : '#ff6b35';
-        const nameLabel = isTuned ? 'AI 비서 (튜닝 완료)' : 'Raw Model (입력 직후)';
+        const nameColor = isTuned ? '#16a34a' : '#ea580c';
+        const nameLabel = isTuned ? 'Tuned Model (튜닝 완료)' : 'Raw Model (훈련 직후)';
 
-        const aiBubble = DOM.create('div', 'flex justify-start mb-2');
-        aiBubble.innerHTML = `<div class="${bubbleCls} px-3 py-2" style="max-width:90%;">
-      <p class="text-xs font-bold mb-1" style="color:${nameColor}; letter-spacing:.05em;">${nameLabel}</p>
-      <p class="text-sm" style="color:#e2e8f0; line-height:1.55; white-space:pre-wrap;">${answer}</p></div>`;
-        chat.appendChild(aiBubble);
+        const aiBubbleContainer = DOM.create('div', 'flex justify-start mb-2 items-end gap-2 group');
+
+        const upText = isTuned ? '👍 유지' : '👍 보상';
+        const downText = isTuned ? '👎 취소' : '👎 페널티';
+
+        aiBubbleContainer.innerHTML = `
+          <div class="${bubbleCls} px-3 py-2" style="max-width:85%;">
+            <p class="text-xs font-semibold mb-1" style="color:${nameColor}; letter-spacing:.05em;">${nameLabel}</p>
+            <p class="text-sm text-slate-700 font-medium" style="line-height:1.55; white-space:pre-wrap;">${answer}</p>
+          </div>
+          <div id="inline-feedback-btns" class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 pb-1">
+            <button id="inline-btn-up" class="w-8 h-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-sm hover:bg-green-50 hover:border-green-400 hover:text-green-600 transition-colors" onclick="p2Feedback(true, this)" title="${upText}">👍</button>
+            <button id="inline-btn-down" class="w-8 h-8 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-sm hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600 transition-colors" onclick="p2Feedback(false, this)" title="${downText}">👎</button>
+          </div>
+        `;
+        chat.appendChild(aiBubbleContainer);
         chat.scrollTop = chat.scrollHeight;
 
-        const fbRow = DOM.get('p2-feedback-row');
-        fbRow.classList.remove('hidden');
-        fbRow.classList.add('flex');
-        DOM.get('p2-fb-down').textContent = isTuned ? '👎 역훈련 (강화 취소)' : '👎 페널티 → 재훈련';
-        DOM.get('p2-fb-up').textContent = isTuned ? '👍 보상 (강화 유지)' : '👍 보상';
         SimulatorState.p2.hasAIMsg = true;
         SimulatorState.p2.awaitingFeedback = true;
     }, 900);
@@ -483,10 +502,38 @@ window.p2SendMessage = function () {
 // ═══════════════════════════════════════════════════════════════
 //  PHASE 2 — FEEDBACK
 // ═══════════════════════════════════════════════════════════════
-window.p2Feedback = function (isPositive) {
+window.p2Feedback = function (isPositive, btnElem) {
+    if (!SimulatorState.p2.awaitingFeedback) return;
+    SimulatorState.p2.awaitingFeedback = false;
+
     const sc = SimulatorState.p2.scenario;
     const mainAxis = sc.axis;
     const isTuned = SimulatorState.p2.axes[mainAxis] >= THRESHOLD;
+
+    // Handle Inline Button Visuals
+    const btnsContainer = document.getElementById('inline-feedback-btns');
+    if (btnsContainer && btnElem) {
+        // Lock visibility so it doesn't fade on mouseout
+        btnsContainer.classList.remove('opacity-0', 'group-hover:opacity-100');
+        btnsContainer.classList.add('opacity-100');
+
+        const upBtn = document.getElementById('inline-btn-up');
+        const downBtn = document.getElementById('inline-btn-down');
+
+        // Disable both
+        upBtn.onclick = null;
+        downBtn.onclick = null;
+        upBtn.classList.add('cursor-default');
+        downBtn.classList.add('cursor-default');
+
+        if (isPositive) {
+            upBtn.classList.add('bg-green-100', 'border-green-500', 'text-green-700');
+            downBtn.classList.add('hidden');
+        } else {
+            downBtn.classList.add('bg-orange-100', 'border-orange-500', 'text-orange-700');
+            upBtn.classList.add('hidden');
+        }
+    }
 
     if (isPositive) {
         SimulatorState.p2.upCount++;
@@ -526,9 +573,6 @@ window.p2Feedback = function (isPositive) {
     }
 
     updateP2Gauges();
-    DOM.hide('p2-feedback-row');
-    DOM.get('p2-feedback-row').classList.remove('flex');
-    SimulatorState.p2.awaitingFeedback = false;
 };
 
 function updateP2Gauges() {
@@ -540,13 +584,13 @@ function updateP2Gauges() {
         numEl.textContent = Math.round(val);
         fill.style.width = val + '%';
         if (val >= THRESHOLD) {
-            fill.style.background = 'linear-gradient(90deg, #00aa00, #39ff14)';
-            fill.style.boxShadow = '0 0 15px rgba(57,255,20,0.8), 0 0 5px rgba(57,255,20,1)';
+            fill.style.background = '#16a34a';
+            fill.style.boxShadow = 'none';
         } else if (val >= THRESHOLD * 0.55) {
-            fill.style.background = 'linear-gradient(90deg, #ca8a04, #ffe600)';
-            fill.style.boxShadow = '0 0 8px rgba(255,230,0,0.4)';
+            fill.style.background = '#ca8a04';
+            fill.style.boxShadow = 'none';
         } else {
-            fill.style.background = 'linear-gradient(90deg, #7c3aed, #a855f7)';
+            fill.style.background = '#9333ea';
             fill.style.boxShadow = 'none';
         }
     });
@@ -566,19 +610,19 @@ function addP2Log(isPositive, deltas, mainAxis, isReverse) {
         dParts = Object.entries(deltas).filter(([, v]) => v > 0).map(([k, v]) =>
             `<span style="color:#ef4444;">${k[0].toUpperCase()}-${v}</span>`);
     } else {
-        const color = isPositive ? '#39ff14' : '#fb923c';
+        const color = isPositive ? '#16a34a' : '#ea580c';
         dParts = Object.entries(deltas).filter(([, v]) => v > 0).map(([k, v]) =>
             `<span style="color:${color};">${k[0].toUpperCase()}+${v}</span>`);
     }
 
     const emoji = isPositive ? '👍' : '👎';
-    let innerHtml = `<span class="text-gray-400">${ts}</span><span>${emoji}</span>${dParts.join(' ')}`;
+    let innerHtml = `<span class="text-gray-400">${ts}</span><span class="mx-1">${emoji}</span>${dParts.join(' ')}`;
 
     const nowTuned = SimulatorState.p2.axes[mainAxis] >= THRESHOLD;
     if (isReverse) {
-        innerHtml += ` <span style="color:#ef4444; font-size: 13px;">↩ 역훈련!</span>`;
+        innerHtml += ` <span style="color:#ef4444; font-size: 13px; font-weight: bold; margin-left: 4px;">↩ 역훈련!</span>`;
     } else if (nowTuned) {
-        innerHtml += ` <span style="color:#ffe600; font-size: 13px;">★ 튜닝!</span>`;
+        innerHtml += ` <span style="color:#ca8a04; font-size: 13px; font-weight: bold; margin-left: 4px;">★ 튜닝!</span>`;
     }
 
     entry.innerHTML = innerHtml;

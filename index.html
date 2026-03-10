@@ -9,37 +9,24 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts already imported in style.css, but keep preconnects -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
-    rel="stylesheet" />
 
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ["'Noto Sans KR'", "sans-serif"],
+            sans: ["'Inter'", "'Noto Sans KR'", "sans-serif"],
             mono: ["'JetBrains Mono'", "monospace"],
-            title: ["'Rajdhani'", "'Noto Sans KR'", "sans-serif"],
           },
           colors: {
-            cyan: { DEFAULT: "#00f5ff", 400: "#22d3ee", 300: "#67e8f9" },
-            magenta: { DEFAULT: "#ff00ff", 400: "#e879f9", 300: "#f0abfc" },
-            neon: {
-              green: "#39ff14",
-              yellow: "#ffe600",
-              orange: "#ff6b35",
-            },
-            dark: {
-              900: "#060810",
-              800: "#0c1120",
-              700: "#111827",
-              600: "#1a2540",
-              500: "#243050",
-            },
+            cyan: { DEFAULT: "#0369A1", 400: "#38bdf8", 300: "#7dd3fc" },
+            magenta: { DEFAULT: "#1D4ED8", 400: "#818cf8", 300: "#c7d2fe" }, /* mapped to purple */
+            primary: "#111827",
+            muted: "#4B5563",
+            border: "#D1D5DB"
           },
         },
       },
@@ -57,173 +44,157 @@
   <div id="app-shell">
 
     <!-- ── TOP NAV BAR ──────────────────────────────────────────── -->
-    <header class="flex items-center justify-between px-5 border-b border-white/8" class="bg-[#070c18] h-[46px]">
+    <header class="flex items-center justify-between px-2 pb-2 border-b border-slate-300">
       <!-- Logo / title -->
-      <div class="flex items-center gap-2">
-        <span class="font-title font-bold tracking-widest"
-          style="color:#00c8d7; font-size:19px; letter-spacing:.12em;">MINI-LLM</span>
-        <span class="font-mono text-gray-400" style="font-size:13px;">v1.0</span>
+      <div class="flex items-center gap-3">
+        <h1 class="text-[2.2rem] font-bold tracking-tight text-primary">MINI-LLM <span
+            class="text-lg font-mono text-muted font-medium ml-1">v1.0</span></h1>
       </div>
       <!-- Phase tabs -->
-      <nav class="flex h-full">
-        <button id="tab-phase1" class="tab-btn active-phase1 font-mono font-bold px-5 h-full"
-          style="font-size:14px; letter-spacing:.06em;" onclick="switchPhase(1)">
+      <nav class="flex gap-4">
+        <div id="tab-phase1" class="nav-item active-phase1" onclick="switchPhase(1)">
           PHASE 1 &nbsp;·&nbsp; PRE-TRAINING
-        </button>
-        <button id="tab-phase2" class="tab-btn font-mono font-bold px-5 h-full"
-          style="font-size:14px; letter-spacing:.06em;" onclick="switchPhase(2)">
+        </div>
+        <div id="tab-phase2" class="nav-item" onclick="switchPhase(2)">
           PHASE 2 &nbsp;·&nbsp; FINE-TUNING
-        </button>
+        </div>
       </nav>
       <!-- Clock -->
-      <div class="font-mono text-gray-400" id="clock" style="font-size:14px;">--:--:--</div>
+      <div class="font-mono text-muted font-bold text-lg" id="clock">--:--:--</div>
     </header>
 
     <!-- ── MAIN CONTENT (two-panel split) ─────────────────────── -->
-    <main class="flex flex-1 overflow-hidden" style="min-height:0;">
+    <main class="flex flex-1 gap-4 overflow-hidden" style="min-height:0;">
 
       <!-- ═══════════ LEFT PANEL — Under the Hood ═══════════ -->
-      <section class="panel-left flex flex-col w-[42%] shrink-0 bg-[#080e1c] overflow-hidden">
+      <section class="flex flex-col w-[40%] shrink-0 gap-4 overflow-hidden">
 
         <!-- ─── PHASE 1 LEFT ─────────────────────────────────── -->
-        <div id="p1-left" class="flex flex-col h-full overflow-hidden" style="padding: 14px 14px 12px;">
-          <p class="font-mono mb-3" style="color:#00c8d7; font-size:14px; letter-spacing:.18em;">UNDER THE HOOD</p>
+        <div id="p1-left" class="card h-full flex flex-col pt-[16px] pb-[16px]">
+          <h2 class="card-title text-cyan-700">UNDER THE HOOD</h2>
 
           <!-- Scenario selector -->
-          <div class="mb-3">
-            <p class="font-mono mb-1.5" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">SCENARIO</p>
-            <div class="flex flex-col gap-1" id="scenario-list">
+          <div class="mb-5">
+            <h3 class="text-xs font-semibold text-muted mb-2 tracking-widest">SCENARIO</h3>
+            <div class="flex flex-col gap-2" id="scenario-list">
               <!-- Populated by JS -->
             </div>
           </div>
 
           <!-- Temperature Slider -->
-          <div class="mb-2">
-            <div class="flex items-center justify-between mb-1.5">
-              <p class="font-mono" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">TEMPERATURE</p>
+          <div class="dash-box p-3 mb-5 border-transparent bg-slate-50">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-semibold text-muted tracking-widest">TEMPERATURE</h3>
               <div class="flex items-center gap-2">
-                <span class="font-mono" style="color:#cbd5e1; font-size:13px;">0.0 결정론적</span>
-                <span class="font-mono font-bold" id="p1-temp-val"
-                  style="color:#a855f7; font-size:17px; min-width:28px; text-align:right;">0.5</span>
-                <span class="font-mono" style="color:#cbd5e1; font-size:13px;">1.0 창의적</span>
+                <span class="text-xs text-muted">0.0 결정론적</span>
+                <span class="font-mono font-bold text-lg text-indigo-600 min-w-[36px] text-center"
+                  id="p1-temp-val">0.5</span>
+                <span class="text-xs text-muted">1.0 창의적</span>
               </div>
             </div>
             <input type="range" id="p1-temp-slider" min="0" max="1" step="0.05" value="0.5"
-              oninput="onTempChange(this.value)" style="width:100%; height:4px; accent-color:#a855f7; cursor:pointer;">
+              oninput="onTempChange(this.value)" class="w-full">
           </div>
 
-          <!-- Probability Bars section -->
-          <div class="flex-1 flex flex-col min-h-0">
-            <p class="font-mono mb-2" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">TOKEN PROBABILITY
-              DISTRIBUTION</p>
-            <div id="prob-bars" class="flex flex-col"></div>
-          </div>
-
-          <!-- Selected token display -->
-          <div class="mt-3 rounded-md px-3 py-2" style="background:#060f1a; border:1px solid rgba(0,200,215,0.2);">
-            <div class="flex items-center justify-between mb-1">
-              <p class="font-mono" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">SELECTED TOKEN</p>
-              <p id="p1-hallucination-warn" class="font-mono hidden warning-flash"
-                style="color:#f97316; font-size:14px;">HALLUCINATION DETECTED</p>
+          <!-- Dynamic Generation Log -->
+          <div
+            class="flex-1 flex flex-col min-h-0 overflow-hidden mb-4 border border-slate-300 bg-white rounded-xl p-3 shadow-sm">
+            <h3 class="text-xs font-semibold text-muted mb-2 tracking-widest">GENERATION LOG</h3>
+            <div id="p1-generation-log"
+              class="live-feed-wrap flex-1 flex flex-col gap-2 bg-transparent border-none p-0">
+              <div class="text-slate-400 font-mono text-sm mt-2 text-center">
+                시나리오를 선택하고 생성을 시작하세요...
+              </div>
             </div>
-            <p id="p1-selected-token" class="font-mono font-bold"
-              style="color:#00f5ff; font-size:32px; min-height:1.5em; letter-spacing:.04em;">&nbsp;</p>
           </div>
         </div>
 
         <!-- ─── PHASE 2 LEFT ─────────────────────────────────── -->
-        <div id="p2-left" class="flex flex-col h-full p-3 gap-2 hidden">
-          <p class="font-mono" style="color:#ff00ff; font-size:14px; letter-spacing:.18em;">◈ UNDER THE HOOD</p>
+        <div id="p2-left" class="card h-full flex flex-col hidden pt-[16px] pb-[16px]">
+          <h2 class="card-title text-purple-700">◈ UNDER THE HOOD</h2>
 
           <!-- Scenario selector -->
-          <div>
-            <p class="font-mono mb-1" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">TRAINING SCENARIO</p>
-            <div class="flex flex-col gap-1" id="p2-scenario-list"></div>
+          <div class="mb-4">
+            <h3 class="text-xs font-semibold text-muted mb-2 tracking-widest">TRAINING SCENARIO</h3>
+            <div class="flex flex-col gap-2" id="p2-scenario-list"></div>
           </div>
 
           <!-- 3-axis weight gauges -->
-          <div class="rounded-lg p-2 border border-white/10" style="background:#0c1322;">
-            <p class="font-mono mb-2" style="color:#cbd5e1; font-size:14px; letter-spacing:.12em;">MODEL WEIGHTS (0–100)
-            </p>
+          <div class="dash-box p-4 mb-4 items-stretch text-left border-transparent bg-slate-50">
+            <h3 class="text-xs font-semibold text-muted mb-4 tracking-widest text-center">MODEL WEIGHTS (0–100)</h3>
             <!-- Empathy -->
-            <div class="mb-2">
+            <div class="mb-4">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-mono font-bold"
-                  style="color:#a855f7; font-size:16px; letter-spacing:.06em;">EMPATHY</span>
-                <span class="font-mono font-bold" id="p2-val-empathy" style="color:#a855f7; font-size:17px;">0</span>
+                <span class="font-mono font-bold text-purple-700 text-base">EMPATHY</span>
+                <span class="font-mono font-bold text-purple-700 text-lg" id="p2-val-empathy">0</span>
               </div>
-              <div class="gauge-track" style="height:8px;">
-                <div id="p2-gauge-empathy" class="gauge-fill"
-                  style="width:0%; background:linear-gradient(90deg,#7c3aed,#a855f7); transition:width .4s ease;"></div>
+              <div class="gauge-track">
+                <div id="p2-gauge-empathy" class="gauge-fill bg-purple-600 w-0"></div>
               </div>
-              <div class="relative mt-0.5" style="height:10px;">
-                <div class="absolute" style="left:50%; transform:translateX(-50%);">
-                  <div style="width:1px; height:5px; background:#ffe600; opacity:.5;"></div>
+              <div class="relative mt-1 h-2">
+                <div class="absolute left-1/2 -translate-x-1/2">
+                  <div class="w-0.5 h-2 bg-gray-400 opacity-50"></div>
                 </div>
               </div>
             </div>
             <!-- Safety -->
-            <div class="mb-2">
+            <div class="mb-4">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-mono font-bold"
-                  style="color:#f97316; font-size:16px; letter-spacing:.06em;">SAFETY</span>
-                <span class="font-mono font-bold" id="p2-val-safety" style="color:#f97316; font-size:17px;">0</span>
+                <span class="font-mono font-bold text-orange-600 text-base">SAFETY</span>
+                <span class="font-mono font-bold text-orange-600 text-lg" id="p2-val-safety">0</span>
               </div>
-              <div class="gauge-track" style="height:8px;">
-                <div id="p2-gauge-safety" class="gauge-fill"
-                  style="width:0%; background:linear-gradient(90deg,#7c3aed,#a855f7); transition:width .4s ease;"></div>
+              <div class="gauge-track">
+                <div id="p2-gauge-safety" class="gauge-fill bg-purple-600 w-0"></div>
               </div>
-              <div class="relative mt-0.5" style="height:10px;">
-                <div class="absolute" style="left:50%; transform:translateX(-50%);">
-                  <div style="width:1px; height:5px; background:#ffe600; opacity:.5;"></div>
+              <div class="relative mt-1 h-2">
+                <div class="absolute left-1/2 -translate-x-1/2">
+                  <div class="w-0.5 h-2 bg-gray-400 opacity-50"></div>
                 </div>
               </div>
             </div>
             <!-- Expertise -->
-            <div>
+            <div class="mb-2">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-mono font-bold"
-                  style="color:#00c8d7; font-size:16px; letter-spacing:.06em;">EXPERTISE</span>
-                <span class="font-mono font-bold" id="p2-val-expertise" style="color:#00c8d7; font-size:17px;">0</span>
+                <span class="font-mono font-bold text-cyan-600 text-base">EXPERTISE</span>
+                <span class="font-mono font-bold text-cyan-600 text-lg" id="p2-val-expertise">0</span>
               </div>
-              <div class="gauge-track" style="height:8px;">
-                <div id="p2-gauge-expertise" class="gauge-fill"
-                  style="width:0%; background:linear-gradient(90deg,#7c3aed,#a855f7); transition:width .4s ease;"></div>
+              <div class="gauge-track">
+                <div id="p2-gauge-expertise" class="gauge-fill bg-purple-600 w-0"></div>
               </div>
-              <div class="relative mt-0.5" style="height:10px;">
-                <div class="absolute" style="left:50%; transform:translateX(-50%);">
-                  <div style="width:1px; height:5px; background:#ffe600; opacity:.5;"></div>
+              <div class="relative mt-1 h-2">
+                <div class="absolute left-1/2 -translate-x-1/2">
+                  <div class="w-0.5 h-2 bg-gray-400 opacity-50"></div>
                 </div>
               </div>
             </div>
-            <p class="font-mono mt-1" style="color:#ffe600; font-size:13px;">| 임계치 50 ▲</p>
+            <p class="font-mono mt-2 text-slate-400 text-xs font-semibold text-center">| 임계치 50 ▲</p>
           </div>
 
           <!-- Feedback counts + log -->
-          <div class="flex items-center gap-4 rounded-lg px-2 py-2 border border-white/10" style="background:#080e1c;">
-            <div class="text-center">
-              <p class="font-mono" style="font-size:15px; color:#cbd5e1;"><svg class="w-4 h-4 mr-1" fill="none"
-                  stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                  </path>
-                </svg></p>
-              <p class="font-mono font-bold" style="color:#39ff14; font-size:20px;"><span id="p2-up-count">0</span></p>
-            </div>
-            <div class="text-center">
-              <p class="font-mono" style="font-size:15px; color:#cbd5e1;"><svg class="w-4 h-4 mr-1" fill="none"
-                  stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5">
-                  </path>
-                </svg></p>
-              <p class="font-mono font-bold" style="color:#fb923c; font-size:20px;"><span id="p2-down-count">0</span>
-              </p>
-            </div>
-            <div class="flex-1">
-              <div id="p2-log" class="flex flex-col gap-0.5 font-mono overflow-y-auto"
-                style="font-size:14px; max-height:56px;">
-                <span class="text-gray-400">— 피드백 없음 —</span>
+          <div class="dash-box p-3 border-transparent bg-slate-50">
+            <div class="flex items-center gap-4">
+              <div class="text-center w-16">
+                <p class="font-mono text-muted text-sm flex justify-center"><svg class="w-5 h-5 opacity-70" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                    </path>
+                  </svg></p>
+                <p class="font-mono font-bold text-green-700 text-2xl" id="p2-up-count">0</p>
+              </div>
+              <div class="text-center w-16">
+                <p class="font-mono text-muted text-sm flex justify-center"><svg class="w-5 h-5" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5">
+                    </path>
+                  </svg></p>
+                <p class="font-mono font-bold text-orange-600 text-2xl" id="p2-down-count">0</p>
+              </div>
+              <div class="flex-1 text-left">
+                <div id="p2-log" class="flex flex-col gap-1 font-mono text-sm overflow-y-auto max-h-[70px] font-bold">
+                  <span class="text-gray-400">— 피드백 없음 —</span>
+                </div>
               </div>
             </div>
           </div>
@@ -232,120 +203,106 @@
       </section>
 
       <!-- ═══════════ RIGHT PANEL — Chat Interface ═══════════ -->
-      <section class="flex flex-col w-[58%] shrink-0 bg-[#090e1a] overflow-hidden border-l border-white/5">
+      <section class="flex flex-col flex-1 shrink-0 gap-4 pr-1">
 
         <!-- ─── PHASE 1 RIGHT ─────────────────────────────────── -->
-        <div id="p1-right" class="flex flex-col h-full" style="padding:14px 16px 12px;">
-          <p class="font-mono mb-3" style="color:#00c8d7; font-size:12px; letter-spacing:.18em;">TEXT GENERATION DEMO
-          </p>
+        <div id="p1-right" class="card h-full flex flex-col pt-[16px] pb-[16px]">
+          <h2 class="card-title text-cyan-700">TEXT GENERATION DEMO</h2>
 
           <!-- Generated sentence display -->
-          <div class="rounded-md overflow-y-auto mb-3"
-            style="background:#060c17; border:1px solid rgba(0,200,215,0.18); padding:14px 16px; min-height:0; flex:0 0 auto;">
-            <p class="font-mono mb-2" style="color:#cbd5e1; font-size:12px; letter-spacing:.12em;">GENERATED SEQUENCE
-            </p>
-            <div id="p1-sentence-display" class="font-bold leading-snug"
-              style="color:#e2e8f0; word-break:keep-all; font-size:24px;">
-              <span style="color:#cbd5e1;">시나리오를 선택하세요 →</span>
+          <div
+            class="dash-box p-4 items-stretch text-left mb-4 min-h-[150px] bg-white border border-slate-300 shrink-0 overflow-y-auto">
+            <h3 class="text-xs font-semibold text-muted mb-3 tracking-widest">GENERATED SEQUENCE</h3>
+            <div id="p1-sentence-display" class="font-medium leading-relaxed text-2xl text-primary break-keep">
+              <span class="text-slate-400">시나리오를 선택하세요 →</span>
             </div>
             <!-- Token sequence chips row -->
-            <div id="p1-token-history" class="flex flex-wrap gap-1 mt-3">
+            <div id="p1-token-history" class="flex flex-wrap gap-2 mt-4">
             </div>
           </div>
 
-          <!-- Dynamic Generation Log -->
-          <div class="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden mb-3">
-            <p class="font-mono" style="color:#cbd5e1; font-size:12px; letter-spacing:.12em;">GENERATION LOG</p>
-            <div id="p1-generation-log" class="flex-1 flex flex-col gap-1.5 overflow-y-auto pr-2 pb-2">
-              <div class="text-gray-500 font-mono text-sm mt-2">
-                시나리오를 선택하고 생성을 시작하세요...
+          <!-- Probability Bars section -->
+          <div class="flex-1 flex flex-col min-h-0 pt-2 pb-4 overflow-y-auto">
+            <h3 class="text-xs font-semibold text-muted mb-3 tracking-widest sticky top-0 z-10 pb-1 pt-1"
+              style="background: var(--bg-card);">TOKEN PROBABILITY DISTRIBUTION</h3>
+            <div id="prob-bars" class="flex flex-col gap-1"></div>
+          </div>
+
+          <!-- Bottom Area: Selected Token + Controls -->
+          <div class="mt-auto flex gap-4 items-stretch">
+            <!-- Selected token display -->
+            <div class="dash-box p-4 border-transparent bg-slate-50 flex-1 min-w-[200px]">
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="text-xs font-semibold text-cyan-700 tracking-widest">SELECTED TOKEN</h3>
+                <p id="p1-hallucination-warn" class="font-mono hidden warning-flash text-sm">HALLUCINATION</p>
               </div>
+              <p id="p1-selected-token"
+                class="font-mono font-bold text-4xl text-cyan-600 min-h-[1.5em] text-center flex items-center justify-center">
+                &nbsp;</p>
             </div>
-          </div>
 
-          <!-- Control buttons — compact, typographic style -->
-          <div class="flex gap-2 items-center">
-            <button id="p1-btn-next" onclick="p1NextToken()"
-              class="font-mono font-bold text-white disabled:opacity-20 transition-all"
-              style="flex:1; padding:7px 0; border-radius:5px; font-size:14px; letter-spacing:.08em; background:transparent; border:1px solid rgba(0,200,215,0.5); color:#00c8d7;"
-              onmouseover="if(!this.disabled) this.style.background='rgba(0,200,215,0.1)'"
-              onmouseout="this.style.background='transparent'" disabled>
-              <span class="flex items-center justify-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24">
+            <!-- Control buttons -->
+            <div class="flex flex-col gap-2 justify-end w-[180px]">
+              <button id="p1-btn-next" onclick="p1NextToken()" class="btn btn-primary h-14" disabled>
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
                   </path>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg> NEXT</span>
-            </button>
-            <button class="font-mono font-bold transition-all"
-              style="flex:0 0 100px; padding:7px 0; border-radius:5px; font-size:14px; letter-spacing:.08em; background:#1e293b; border:1px solid rgba(255,255,255,0.1); color:#94a3b8;"
-              onclick="p1Reset(true)" onmouseover="this.style.background='#334155'; this.style.color='#cbd5e1';"
-              onmouseout="this.style.background='#1e293b'; this.style.color='#94a3b8';">
-              <span class="flex items-center justify-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24">
+                </svg> NEXT TOKEN
+              </button>
+              <button onclick="p1Reset(true)" class="btn bg-white border-gray-300 h-12 text-muted">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                   </path>
-                </svg> RESET</span>
-            </button>
+                </svg>
+                RESET
+              </button>
+            </div>
           </div>
-        </div>
-
-        <!-- ─── PHASE 2 RIGHT ─────────────────────────────────── -->
-        <div id="p2-right" class="flex flex-col h-full w-full p-3 gap-2 hidden">
-          <p class="font-mono" style="color:#ff00ff; font-size:12px; letter-spacing:.18em;">◈ CHAT INTERFACE · RLHF DEMO
-          </p>
+        </div> <!-- ─── PHASE 2 RIGHT ─────────────────────────────────── -->
+        <div id="p2-right" class="card h-full flex flex-col hidden pt-[16px] pb-[16px]">
+          <h2 class="card-title text-purple-700">◈ CHAT INTERFACE · RLHF DEMO</h2>
 
           <!-- Chat window -->
-          <div id="p2-chat" class="flex-1 rounded-lg p-2 overflow-y-auto"
-            style="background:#060d18; border:1px solid rgba(255,0,255,0.15); min-height:0;">
-            <div class="text-gray-400 text-xs text-center py-4">왼쪽에서 시나리오를 선택하고 아래 버튼을 누르세요</div>
+          <div id="p2-chat"
+            class="live-feed-wrap flex-1 flex flex-col gap-3 p-4 mb-4 bg-white border border-slate-300 rounded-xl shadow-sm min-h-0">
+            <div class="text-slate-400 text-sm font-medium text-center py-6">왼쪽에서 시나리오를 선택하고 아래 전송 버튼을 누르세요</div>
           </div>
 
-          <!-- Fixed prompt display + send button -->
-          <div class="flex gap-2 items-center rounded-lg px-3 py-2"
-            style="background:#0c1322; border:1px solid rgba(255,0,255,0.3);">
-            <span id="p2-prompt-text" class="flex-1 text-sm font-bold" style="color:#e2e8f0;">—</span>
-            <button class="send-btn text-white font-mono font-bold px-4 py-2"
-              style="font-size:13px; letter-spacing:.06em;" onclick="p2SendMessage()">전송 ▶</button>
+          <!-- Modern Pill-shaped chat input -->
+          <div
+            class="relative flex items-center bg-white border border-slate-300 rounded-full shadow-sm px-4 py-2 mb-4">
+            <span id="p2-prompt-text"
+              class="flex-1 text-left text-lg font-medium text-slate-400 select-none overflow-hidden text-ellipsis whitespace-nowrap mr-12">왼쪽에서
+              시나리오를 선택하세요...</span>
+            <button id="p2-send-btn"
+              class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 transition-all duration-300"
+              onclick="p2SendMessage()" disabled>
+              <svg class="w-5 h-5 translate-y-[1px] translate-x-[1px]" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18">
+                </path>
+              </svg>
+            </button>
           </div>
 
-          <!-- Feedback row (hidden until AI responds) -->
-          <div id="p2-feedback-row" class="hidden gap-2 items-center rounded-lg p-2"
-            style="background:#080e1c; border:1px solid rgba(255,255,255,0.06);">
-            <p class="font-mono" style="color:#cbd5e1; font-size:12px; flex:1;">이 답변에 대한 피드백</p>
-            <button id="p2-fb-up" class="fb-btn fb-up" onclick="p2Feedback(true)"><span
-                class="flex items-center justify-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                  </path>
-                </svg> 보상</span></button>
-            <button id="p2-fb-down" class="fb-btn fb-down" onclick="p2Feedback(false)"><span
-                class="flex items-center justify-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5">
-                  </path>
-                </svg> 트레이닝 (페널티)</span></button>
-          </div>
         </div>
 
       </section>
     </main>
 
     <!-- ── STATUS BAR ─────────────────────────────────────────────── -->
-    <footer class="flex items-center gap-3 px-4 py-1 border-t border-white/06"
-      style="background:#060810; font-size:13px;">
-      <span class="text-gray-400 font-mono">MINI-LLM SIM · 2025 · AI Education Interactive</span>
+    <footer class="flex items-center gap-3 px-2 pt-1 mt-1 font-mono text-sm font-bold text-gray-400">
+      <span>MINI-LLM SIM · 2025 · AI Education Interactive</span>
       <span class="flex-1"></span>
-      <span id="status-indicator" class="flex items-center gap-1 text-gray-500">
-        <span class="inline-block w-1.5 h-1.5 rounded-full bg-green-400" style="box-shadow:0 0 4px #39ff14;"></span>
+      <span id="status-indicator" class="flex items-center gap-2 text-gray-500">
+        <span class="inline-block w-2 h-2 rounded-full bg-green-500"></span>
         READY
       </span>
-      <span class="text-gray-400 font-mono">4:3 PROJECTOR MODE</span>
+      <span>| 4:3 PROJECTOR MODE</span>
     </footer>
 
   </div><!-- /app-shell -->
