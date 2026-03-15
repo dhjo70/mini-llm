@@ -406,8 +406,8 @@ function buildP2ScenarioList() {
     if (!list) return;
     list.innerHTML = '';
     RLHF_SCENARIOS.forEach((sc) => {
-        const el = DOM.create('div', 'scenario-chip px-3 py-2 flex items-center gap-2',
-            `<span class="text-purple-700 font-bold" style="line-height:1.4; font-size:1.05rem;">${sc.label}</span>`
+        const el = DOM.create('div', 'scenario-chip px-3 py-1.5 flex items-center gap-2',
+            `<span class="text-purple-700 font-bold" style="line-height:1.3; font-size:1rem;">${sc.label}</span>`
         );
         el.id = `p2-chip-${sc.id}`;
         el.onclick = () => selectP2Scenario(sc.id);
